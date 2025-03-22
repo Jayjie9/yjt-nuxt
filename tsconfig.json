@@ -1,8 +1,23 @@
 {
-  // https://nuxt.com/docs/guide/concepts/typescript
+  // 继承 Nuxt 自动生成的 TypeScript 配置
   "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
+    // 使用最新的 ECMAScript 模块系统
     "module": "ESNext",
-    "moduleResolution": "Node"
+    // 目标 ECMAScript 版本
+    "target": "ES2022",
+    // 设置模块解析策略为 Node.js 风格
+    "moduleResolution": "Node",
+    // 配置模块路径别名,方便导入
+    "paths": {
+      // ~ 指向项目根目录
+      "~/*": ["./*"],
+      // #imports 指向 Nuxt 自动生成的导入
+      "#imports": ["./.nuxt/imports"],
+      // #app 指向 Nuxt 应用实例
+      "#app": ["./.nuxt/app"],
+      // #build 指向 Nuxt 构建输出目录
+      "#build/*": ["./.nuxt/build/*"]
+    }
   }
 }

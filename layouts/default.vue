@@ -1,10 +1,4 @@
 <script setup lang="ts">
-import "~/assets/css/app.css";
-// import "~/assets/css/chunk.css";
-// import "~/assets/css/iconfont.css";
-import "~/assets/css/main.css";
-import MyHeader from "~/layouts/my-header.vue";
-import MyFooter from "~/layouts/my-footer.vue";
 
 </script>
 
@@ -12,7 +6,7 @@ import MyFooter from "~/layouts/my-footer.vue";
   <div class="app-container">
     <div id="main">
       <header>
-        <my-header/>
+        <my-header />
       </header>
 
       <main>
@@ -23,14 +17,10 @@ import MyFooter from "~/layouts/my-footer.vue";
       </main>
 
       <footer>
-        <my-footer/>
+        <my-footer />
       </footer>
     </div>
   </div>
 </template>
 
-<style scoped>
-header, footer {
-  border: 1px solid #2d2d2d;
-}
-</style>
+<style scoped></style>

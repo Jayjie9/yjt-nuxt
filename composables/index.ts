@@ -1,4 +1,8 @@
-// 客户端API接口
+/**
+ * 客户端API接口
+ * 负责处理客户端API请求
+ * 包括登录、注册、用户信息获取等
+ */
 import {
   useFetchGet,
   useFetchPost,
@@ -9,6 +13,12 @@ import {
 interface UserLoginData {
   phone: string
   code: string
+  openid?: string
+}
+
+interface UserPwdLoginData {
+  phone: string
+  password: string
   openid?: string
 }
 
@@ -51,6 +61,15 @@ interface HospitalQueryParams {
 // 用户手机号验证码登录
 export const loginBySms = (data: UserLoginData) => {
   return useFetchPost('/api/user/login', data)
+}
+
+export const loginByPassword = (data: UserPwdLoginData) => {
+  return useFetchPost('/api/user/pwdLogin', data)
+}
+
+// 测试接口
+export const test = () => {
+  return useFetchGet('/api/user/test')
 }
 
 // 发送手机验证码
@@ -276,6 +295,7 @@ export const useApi = () => {
     patient: usePatientApi(),
     user: useUserApi(),
     loginBySms,
+    loginByPassword,
     sendCaptcha,
   }
 }

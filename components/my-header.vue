@@ -12,10 +12,18 @@ import {
   Service
 } from '@element-plus/icons-vue'
 
+import { useUserStore } from '~/stores/user'
 
-// 用户登录状态（模拟，实际应该从 store 或 API 获取）
-const isLoggedIn = ref(false)
-let displayName = ref('藤椒鸡柳-')
+
+// 用户登录状态
+const userStore = useUserStore()
+const isLoggedIn = computed(() => userStore.LoggedIn)
+const displayName = computed(() => userStore.getUserName)
+
+// 在组件挂载时恢复用户状态
+onMounted(() => {
+  userStore.restoreUserInfo()
+})
 
 // 处理回到首页
 function goHome() {
@@ -55,20 +63,29 @@ function goToPatients() {
   navigateTo('/user/patients')
 }
 
-// 切换登录状态（演示用）
-function toggleLogin() {
-  isLoggedIn.value = !isLoggedIn.value
-  if (isLoggedIn.value) {
-    ElMessage.success('已登录')
-  } else {
-    ElMessage.info('已退出登录')
-  }
-}
-
 const handleLoginCommand = (command: string | number | object) => {
   if (command === 'logout') {
-    isLoggedIn.value = false
+    userStore.logout()
     ElMessage.info('已退出登录')
+    // 强制刷新页面以确保状态更新
+    if (import.meta.client) {
+      window.location.href = '/'
+    }
+    return
+  }
+
+  if (command === '个人中心') {
+    navigateTo('/user/profile')
+    return
+  }
+
+  if (command === '挂号订单') {
+    navigateTo('/user/orders')
+    return
+  }
+
+  if (command === '就诊人管理') {
+    navigateTo('/user/patients')
     return
   }
 
@@ -145,12 +162,10 @@ const handleLoginCommand = (command: string | number | object) => {
             </el-icon>
             <span>登录/注册</span>
           </div>
-          <!-- 演示用按钮 -->
-          <el-button size="small" @click="toggleLogin">演示登录</el-button>
         </template>
 
         <template v-else>
-          <el-dropdown @command="handleLoginCommand">
+          <el-dropdown @command="handleLoginCommand" class="user-dropdown">
             <div class="el-dropdown-link">
               <div class="avatar">{{ displayName.charAt(0) }}</div>
               <span>{{ displayName }}</span>
@@ -333,16 +348,17 @@ const handleLoginCommand = (command: string | number | object) => {
 }
 
 /* 下拉菜单样式 */
+.user-dropdown {
+  cursor: pointer;
+}
+
 .el-dropdown-link {
   display: flex;
   align-items: center;
-  cursor: pointer;
+  gap: 8px;
   padding: 5px 8px;
   border-radius: 4px;
-  transition: background-color 0.3s;
-  font-size: 14px;
-  color: #606266;
-  gap: 8px;
+  transition: all 0.3s;
 }
 
 .el-dropdown-link:hover {
@@ -350,19 +366,9 @@ const handleLoginCommand = (command: string | number | object) => {
   color: #409EFF;
 }
 
-.el-icon--right {
-  font-size: 12px;
-  transition: transform 0.2s;
-}
-
-.el-dropdown-link:hover .el-icon--right {
-  transform: rotate(180deg);
-}
-
-/* 头像样式 */
 .avatar {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background-color: #409EFF;
   color: white;
@@ -370,6 +376,16 @@ const handleLoginCommand = (command: string | number | object) => {
   justify-content: center;
   align-items: center;
   font-weight: 600;
+}
+
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:deep(.el-dropdown-menu__item .el-icon) {
+  margin-right: 0;
 }
 
 /* 响应式设计 */

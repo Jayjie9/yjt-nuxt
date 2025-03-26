@@ -1,184 +1,12 @@
-<template>
-  <div class="home-page">
-    <!-- 轮播图区域 -->
-    <div class="banner-section">
-      <el-carousel height="400px" :interval="5000" arrow="always" indicator-position="outside" class="main-carousel">
-        <el-carousel-item v-for="item in 2" :key="item">
-          <div class="carousel-content">
-            <img src="~/assets/images/web-banner1.png" alt="医院轮播图" class="carousel-image">
-            <div class="carousel-overlay">
-              <h2 class="carousel-title">便捷就医 · 健康生活</h2>
-              <p class="carousel-desc">提供全国知名医院挂号、问诊服务</p>
-            </div>
-          </div>
-        </el-carousel-item>
-      </el-carousel>
-    </div>
-
-    <!-- 搜索区域 -->
-    <div class="search-section">
-      <div class="search-container">
-        <div class="search-title">
-          <h3>查找医院</h3>
-          <p>全国超过2000家医院在线挂号</p>
-        </div>
-        <div class="search-box">
-          <el-autocomplete class="search-input" v-model="searchName" :fetch-suggestions="querySearchAsync"
-            placeholder="请输入医院名称" @select="handleSelect" :trigger-on-focus="false" highlight-first-item>
-            <template #prefix>
-              <el-icon>
-                <Search />
-              </el-icon>
-            </template>
-            <template #suffix>
-              <el-button type="primary" class="search-btn">搜索</el-button>
-            </template>
-            <template #default="{ item }">
-              <div class="search-suggestion-item">
-                <span>{{ item.hosname }}</span>
-                <span class="hospital-level">{{ item.param?.hostypeString }}</span>
-              </div>
-            </template>
-          </el-autocomplete>
-        </div>
-      </div>
-    </div>
-
-    <!-- 主要内容区域 -->
-    <div class="main-content">
-      <div class="content-left">
-        <!-- 筛选区域 -->
-        <div class="filter-panel">
-          <div class="panel-header">
-            <h3>医院筛选</h3>
-          </div>
-          <div class="filter-options">
-            <div class="filter-group">
-              <span class="filter-label">等级：</span>
-              <div class="filter-items">
-                <span v-for="(item, index) in hostypeList" :key="item.id" class="filter-tag"
-                  :class="{ 'filter-tag-active': hostypeActiveIndex === index }"
-                  @click="hostypeSelect(item.value, index)">
-                  {{ item.name }}
-                </span>
-              </div>
-            </div>
-
-            <div class="filter-group">
-              <span class="filter-label">地区：</span>
-              <div class="filter-items">
-                <span v-for="(item, index) in districtList" :key="item.id" class="filter-tag"
-                  :class="{ 'filter-tag-active': provinceActiveIndex === index }"
-                  @click="districtSelect(item.value, index)">
-                  {{ item.name }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 医院列表 -->
-        <div class="hospital-grid">
-          <el-card v-for="item in hospitalList" :key="item.id" class="hospital-card" shadow="hover"
-            @click="navigateToHospital(item.hoscode)">
-            <div class="hospital-card-content">
-              <div class="hospital-info">
-                <h3 class="hospital-name">{{ item.hosname }}</h3>
-                <div class="hospital-meta">
-                  <div class="meta-item">
-                    <el-icon>
-                      <OfficeBuilding />
-                    </el-icon>
-                    <span>{{ item.param.hostypeString }}</span>
-                  </div>
-                  <div class="meta-item">
-                    <el-icon>
-                      <Clock />
-                    </el-icon>
-                    <span>每天{{ item.bookingRule.releaseTime }}放号</span>
-                  </div>
-                </div>
-              </div>
-              <img :src="`data:image/jpeg;base64,${item.logoData}`" :alt="item.hosname" class="hospital-logo">
-            </div>
-          </el-card>
-        </div>
-      </div>
-
-      <div class="content-right">
-        <!-- 常见科室 -->
-        <div class="side-panel dept-panel">
-          <div class="panel-header">
-            <h3>常见科室</h3>
-            <div class="view-all">
-              <span>全部</span>
-              <el-icon>
-                <ArrowRight />
-              </el-icon>
-            </div>
-          </div>
-          <div class="dept-list">
-            <span class="dept-item" v-for="dept in commonDepts" :key="dept">{{ dept }}</span>
-          </div>
-        </div>
-
-        <!-- 平台公告 -->
-        <div class="side-panel notice-panel">
-          <div class="panel-header">
-            <div class="header-with-icon">
-              <el-icon>
-                <Notification />
-              </el-icon>
-              <h3>平台公告</h3>
-            </div>
-            <div class="view-all">
-              <span>全部</span>
-              <el-icon>
-                <ArrowRight />
-              </el-icon>
-            </div>
-          </div>
-          <div class="notice-list">
-            <div class="notice-item" v-for="(notice, index) in platformNotices" :key="index">
-              <div class="notice-dot"></div>
-              <span class="notice-text">{{ notice }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 停诊公告 -->
-        <div class="side-panel notice-panel stop-panel">
-          <div class="panel-header">
-            <div class="header-with-icon">
-              <el-icon>
-                <Warning />
-              </el-icon>
-              <h3>停诊公告</h3>
-            </div>
-            <div class="view-all">
-              <span>全部</span>
-              <el-icon>
-                <ArrowRight />
-              </el-icon>
-            </div>
-          </div>
-          <div class="notice-list">
-            <div class="notice-item" v-for="(notice, index) in stopNotices" :key="index">
-              <div class="notice-dot"></div>
-              <span class="notice-text">{{ notice }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { Search, OfficeBuilding, Clock, ArrowRight, Notification, Warning } from '@element-plus/icons-vue'
 import { useApi } from '~/composables'
 import { useRouter } from 'nuxt/app'
 import type { Hospital, HospitalQueryParams } from '~/types'
+
+// definePageMeta({
+//   middleware: 'jwt-auth',
+// })
 
 // 获取API
 const { hospital, dictionary } = useApi()
@@ -301,6 +129,11 @@ const querySearchAsync = (queryString: string, cb: (suggestions: any[]) => void)
   })
 }
 
+const test = () => {
+  const jwt = useJWT()
+  console.log(jwt.accessToken.value)
+}
+
 // 选择搜索结果
 const handleSelect = (item: any) => {
   navigateToHospital(item.hoscode)
@@ -311,6 +144,187 @@ const navigateToHospital = (hoscode: string) => {
   router.push(`/hospital/${hoscode}`)
 }
 </script>
+
+<template>
+  <div class="home-page">
+    <!-- 轮播图区域 -->
+    <div class="banner-section">
+      <el-carousel height="400px" :interval="5000" arrow="always" indicator-position="outside" class="main-carousel">
+        <el-carousel-item v-for="item in 2" :key="item">
+          <div class="carousel-content">
+            <img src="~/assets/images/web-banner1.png" alt="医院轮播图" class="carousel-image">
+            <div class="carousel-overlay">
+              <h2 class="carousel-title">便捷就医 · 健康生活</h2>
+              <p class="carousel-desc">提供全国知名医院挂号、问诊服务</p>
+            </div>
+          </div>
+        </el-carousel-item>
+      </el-carousel>
+    </div>
+
+    <!-- 搜索区域 -->
+    <div class="search-section">
+      <div class="search-container">
+        <div class="search-title">
+          <h3>查找医院</h3>
+          <p>全国超过2000家医院在线挂号</p>
+        </div>
+        <div class="search-box">
+          <el-autocomplete class="search-input" v-model="searchName" :fetch-suggestions="querySearchAsync"
+            placeholder="请输入医院名称" @select="handleSelect" :trigger-on-focus="false" highlight-first-item>
+            <template #prefix>
+              <el-icon>
+                <Search />
+              </el-icon>
+            </template>
+            <template #suffix>
+              <el-button type="primary" class="search-btn">搜索</el-button>
+            </template>
+            <template #default="{ item }">
+              <div class="search-suggestion-item">
+                <span>{{ item.hosname }}</span>
+                <span class="hospital-level">{{ item.param?.hostypeString }}</span>
+              </div>
+            </template>
+          </el-autocomplete>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+      <div class="content-left">
+        <!-- 筛选区域 -->
+        <div class="filter-panel">
+          <div class="panel-header">
+            <h3>医院筛选</h3>
+          </div>
+          <div class="filter-options">
+            <div class="filter-group">
+              <span class="filter-label">等级：</span>
+              <div class="filter-items">
+                <span v-for="(item, index) in hostypeList" :key="item.id" class="filter-tag"
+                  :class="{ 'filter-tag-active': hostypeActiveIndex === index }"
+                  @click="hostypeSelect(item.value, index)">
+                  {{ item.name }}
+                </span>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <span class="filter-label">地区：</span>
+              <div class="filter-items">
+                <span v-for="(item, index) in districtList" :key="item.id" class="filter-tag"
+                  :class="{ 'filter-tag-active': provinceActiveIndex === index }"
+                  @click="districtSelect(item.value, index)">
+                  {{ item.name }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 医院列表 -->
+        <div class="hospital-grid">
+          <el-card v-for="item in hospitalList" :key="item.id" class="hospital-card" shadow="hover"
+            @click="navigateToHospital(item.hoscode)">
+            <div class="hospital-card-content">
+              <div class="hospital-info">
+                <h3 class="hospital-name">{{ item.hosname }}</h3>
+                <div class="hospital-meta">
+                  <div class="meta-item">
+                    <el-icon>
+                      <OfficeBuilding />
+                    </el-icon>
+                    <span>{{ item.param.hostypeString }}</span>
+                  </div>
+                  <div class="meta-item">
+                    <el-icon>
+                      <Clock />
+                    </el-icon>
+                    <span>每天{{ item.bookingRule.releaseTime }}放号</span>
+                  </div>
+                </div>
+              </div>
+              <img :src="`data:image/jpeg;base64,${item.logoData}`" :alt="item.hosname" class="hospital-logo">
+            </div>
+          </el-card>
+        </div>
+      </div>
+
+      <div>
+        <el-button type="primary" @click="test">测试</el-button>
+      </div>
+
+      <div class="content-right">
+        <!-- 常见科室 -->
+        <div class="side-panel dept-panel">
+          <div class="panel-header">
+            <h3>常见科室</h3>
+            <div class="view-all">
+              <span>全部</span>
+              <el-icon>
+                <ArrowRight />
+              </el-icon>
+            </div>
+          </div>
+          <div class="dept-list">
+            <span class="dept-item" v-for="dept in commonDepts" :key="dept">{{ dept }}</span>
+          </div>
+        </div>
+
+        <!-- 平台公告 -->
+        <div class="side-panel notice-panel">
+          <div class="panel-header">
+            <div class="header-with-icon">
+              <el-icon>
+                <Notification />
+              </el-icon>
+              <h3>平台公告</h3>
+            </div>
+            <div class="view-all">
+              <span>全部</span>
+              <el-icon>
+                <ArrowRight />
+              </el-icon>
+            </div>
+          </div>
+          <div class="notice-list">
+            <div class="notice-item" v-for="(notice, index) in platformNotices" :key="index">
+              <div class="notice-dot"></div>
+              <span class="notice-text">{{ notice }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 停诊公告 -->
+        <div class="side-panel notice-panel stop-panel">
+          <div class="panel-header">
+            <div class="header-with-icon">
+              <el-icon>
+                <Warning />
+              </el-icon>
+              <h3>停诊公告</h3>
+            </div>
+            <div class="view-all">
+              <span>全部</span>
+              <el-icon>
+                <ArrowRight />
+              </el-icon>
+            </div>
+          </div>
+          <div class="notice-list">
+            <div class="notice-item" v-for="(notice, index) in stopNotices" :key="index">
+              <div class="notice-dot"></div>
+              <span class="notice-text">{{ notice }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 
 <style scoped>
 /* 全局页面样式 */

@@ -1,5 +1,12 @@
 <script setup lang="ts">
+import { useUserStore } from '~/stores/user'
 
+// 在布局级别恢复用户状态，确保所有页面都能访问到正确的用户状态
+const userStore = useUserStore()
+
+onMounted(() => {
+  userStore.restoreUserInfo()
+})
 </script>
 
 <template>

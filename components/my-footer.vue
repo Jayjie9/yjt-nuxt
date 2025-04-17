@@ -3,7 +3,7 @@ const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <div class="footer-container">
+  <footer class="footer-container">
     <div class="footer-content">
       <div class="footer-links">
         <div class="footer-link-group">
@@ -27,76 +27,114 @@ const currentYear = new Date().getFullYear()
       </div>
 
       <div class="footer-bottom">
-        <p>Copyright © {{ currentYear }} 医捷通 All Rights Reserved.</p>
-        <p><a href="https://beian.miit.gov.cn/" target="_blank">陇ICP备2025017877号</a></p>
+        <div class="copyright">
+          <span>Copyright © {{ currentYear }} 医捷通</span>
+          <span class="divider">|</span>
+          <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">陇ICP备2025017877号</a>
+        </div>
       </div>
     </div>
-  </div>
+  </footer>
 </template>
 
 <style scoped>
 .footer-container {
-  padding: 20px 0;
-  background-color: #f8f9fa;
-  color: #333
+  background: #f8fafc;
+  padding: 30px 0 20px;
+  color: var(--el-text-color-regular);
+  margin-top: auto;
 }
 
 .footer-content {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 0 10px
+  padding: 0 24px;
 }
 
 .footer-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  margin-bottom: 20px
-}
-
-.footer-link-group {
-  width: 25%;
-  margin-bottom: 15px
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  margin-bottom: 24px;
 }
 
 .footer-link-group h4 {
   font-size: 15px;
-  margin-bottom: 10px;
-  font-weight: 600
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  margin-bottom: 12px;
 }
 
 .footer-link-group a {
   display: block;
-  color: #666;
+  color: var(--el-text-color-regular);
   text-decoration: none;
-  margin-bottom: 6px;
-  font-size: 13px
+  font-size: 13px;
+  margin-bottom: 8px;
+  transition: all 0.3s;
 }
 
 .footer-link-group a:hover {
-  color: #409eff
+  color: var(--el-color-primary);
+  transform: translateX(4px);
 }
 
 .footer-bottom {
-  border-top: 1px solid #e5e5e5;
-  padding-top: 15px;
+  padding-top: 16px;
+  border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.copyright {
   text-align: center;
   font-size: 13px;
-  color: #666
+  color: var(--el-text-color-secondary);
 }
 
-.footer-bottom a {
-  color: #666;
-  text-decoration: none
+.copyright .divider {
+  margin: 0 12px;
+  color: var(--el-border-color);
 }
 
-.footer-bottom a:hover {
-  color: #409eff
+.copyright a {
+  color: var(--el-text-color-secondary);
+  text-decoration: none;
+  transition: color 0.3s;
 }
 
-@media (max-width:768px) {
-  .footer-link-group {
-    width: 100%
+.copyright a:hover {
+  color: var(--el-color-primary);
+}
+
+@media screen and (max-width: 768px) {
+  .footer-container {
+    padding: 24px 0 16px;
+  }
+
+  .footer-links {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .footer-content {
+    padding: 0 16px;
+  }
+
+  .footer-links {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .copyright {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .copyright .divider {
+    display: none;
   }
 }
 </style>

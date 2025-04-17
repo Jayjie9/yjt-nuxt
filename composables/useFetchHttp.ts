@@ -6,7 +6,6 @@
 
 import { useFetch, useRuntimeConfig } from 'nuxt/app'
 import type { UseFetchOptions } from 'nuxt/app'
-import { useAuth } from '~/composables/useAuth'
 
 interface RequestOptions extends UseFetchOptions<any> {
   customBaseURL?: string

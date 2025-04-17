@@ -10,6 +10,13 @@ import {
   useFetchDelete,
 } from './useFetchHttp'
 
+import {
+  fetchGet,
+  fetchPost,
+  fetchPut,
+  fetchDelete,
+} from './useDollarFetchHttp'
+
 interface UserLoginData {
   phone: string
   code: string
@@ -92,6 +99,17 @@ export const useHospitalApi = () => {
     )
   }
 
+  const getHospPageListDollar = (
+    page: number,
+    limit: number,
+    searchObj: HospitalQueryParams
+  ) => {
+    return fetchGet(
+      `/api/hosp/hospital/findHospList/${page}/${limit}`,
+      searchObj
+    )
+  }
+
   // 根据医院名称获取医院列表
   const getByHosname = (hosname: string) => {
     return useFetchGet(`/api/hosp/hospital/findByHosname/${hosname}`)
@@ -100,6 +118,10 @@ export const useHospitalApi = () => {
   // 根据医院编号，查询医院预约挂号详情信息
   const findHospDetail = (hoscode: string) => {
     return useFetchGet(`/api/hosp/hospital/findHospDetail/${hoscode}`)
+  }
+
+  const findHospDetailDollar = (hoscode: string) => {
+    return fetchGet(`/api/hosp/hospital/findHospDetail/${hoscode}`)
   }
 
   // 根据医院编号，查询医院所有科室列表
@@ -115,7 +137,7 @@ export const useHospitalApi = () => {
     depcode: string
   ) => {
     return useFetchGet(
-      `/api/hosp/hospital/auth/getBookingScheduleRule/${page}/${limit}/${hoscode}/${depcode}`
+      `/api/hosp/hospital/getBookingScheduleRule/${page}/${limit}/${hoscode}/${depcode}`
     )
   }
 
@@ -126,7 +148,7 @@ export const useHospitalApi = () => {
     workDate: string
   ) => {
     return useFetchGet(
-      `/api/hosp/hospital/auth/findScheduleList/${hoscode}/${depcode}/${workDate}`
+      `/api/hosp/hospital/findScheduleList/${hoscode}/${depcode}/${workDate}`
     )
   }
 
@@ -137,8 +159,10 @@ export const useHospitalApi = () => {
 
   return {
     getHospPageList,
+    getHospPageListDollar,
     getByHosname,
     findHospDetail,
+    findHospDetailDollar,
     findDepartment,
     getBookingScheduleRule,
     findScheduleList,
@@ -158,16 +182,26 @@ export const useDictionaryApi = () => {
     return useFetchGet(`/api/cmn/dict/findChildData/${parentId}`)
   }
 
+  const findByParentIdDollar = (parentId: string) => {
+    return fetchGet(`/api/cmn/dict/findChildData/${parentId}`)
+  }
+
+  const findByDictCodeDollar = (dictCode: string) => {
+    return fetchGet(`/api/cmn/dict/findByDictCode/${dictCode}`)
+  }
+
   return {
     findByDictCode,
     findByParentId,
+    findByDictCodeDollar,
+    findByParentIdDollar,
   }
 }
 
 // 订单接口
 export const useOrderApi = () => {
   // 生成订单
-  const submitOrder = (scheduleId: string, patientId: string) => {
+  const submitOrder = (scheduleId: string, patientId: number) => {
     return useFetchPost(
       `/api/order/orderInfo/auth/submitOrder/${scheduleId}/${patientId}`,
       {}
@@ -179,6 +213,10 @@ export const useOrderApi = () => {
     return useFetchGet(`/api/order/orderInfo/auth/getOrders/${orderId}`)
   }
 
+  const getOrderDetailDollar = (orderId: string) => {
+    return fetchGet(`/api/order/orderInfo/auth/getOrders/${orderId}`)
+  }
+
   // 订单列表（条件查询带分页）
   const getOrderPageList = (
     page: number,
@@ -188,9 +226,21 @@ export const useOrderApi = () => {
     return useFetchGet(`/api/order/orderInfo/${page}/${limit}`, searchObj)
   }
 
+  const getOrderPageListDollar = (
+    page: number,
+    limit: number,
+    searchObj: OrderQueryParams
+  ) => {
+    return fetchGet(`/api/order/orderInfo/${page}/${limit}`, searchObj)
+  }
+
   // 获取订单状态
   const getStatusList = () => {
     return useFetchGet(`/api/order/orderInfo/getStatusList`)
+  }
+
+  const getStatusListDollar = () => {
+    return fetchGet(`/api/order/orderInfo/getStatusList`)
   }
 
   // 取消预约
@@ -198,36 +248,38 @@ export const useOrderApi = () => {
     return useFetchGet(`/api/order/orderInfo/auth/cancelOrder/${orderId}`)
   }
 
+  const cancelOrderDollar = (orderId: string) => {
+    return fetchGet(`/api/order/orderInfo/auth/cancelOrder/${orderId}`)
+  }
+
   return {
     submitOrder,
     getOrderDetail,
+    getOrderDetailDollar,
     getOrderPageList,
+    getOrderPageListDollar,
     getStatusList,
+    getStatusListDollar,
     cancelOrder,
+    cancelOrderDollar,
   }
 }
 
-// 微信支付接口
-export const useWeixinApi = () => {
-  // 生成二维码
-  const createNative = (orderId: string) => {
-    return useFetchGet(`/api/order/weixin/createNative/${orderId}`)
-  }
-
-  // 生成微信扫描二维码
-  const getLoginParam = () => {
-    return useFetchGet(`/api/ucenter/wx/getLoginParam`)
-  }
-
-  // 查询订单状态
-  const queryPayStatus = (orderId: string) => {
-    return useFetchGet(`/api/order/weixin/queryPayStatus/${orderId}`)
+export const useAlipayApi = () => {
+  const toPay = (orderId: string) => {
+    return fetchGet(
+      `/api/order/pay`,
+      { id: orderId },
+      {
+        headers: {
+          Accept: 'text/html',
+        },
+      }
+    )
   }
 
   return {
-    createNative,
-    getLoginParam,
-    queryPayStatus,
+    toPay,
   }
 }
 
@@ -238,9 +290,17 @@ export const usePatientApi = () => {
     return useFetchGet(`/api/user/patient/auth/findAll`)
   }
 
+  const findListDollar = () => {
+    return fetchGet(`/api/user/patient/auth/findAll`)
+  }
+
   // 根据id查询就诊人信息
   const getById = (id: string) => {
     return useFetchGet(`/api/user/patient/auth/get/${id}`)
+  }
+
+  const getByIdDollar = (id: string) => {
+    return fetchGet(`/api/user/patient/auth/get/${id}`)
   }
 
   // 添加就诊人信息
@@ -260,7 +320,9 @@ export const usePatientApi = () => {
 
   return {
     findList,
+    findListDollar,
     getById,
+    getByIdDollar,
     savePatient,
     updatePatient,
     removePatient,
@@ -279,9 +341,14 @@ export const useUserApi = () => {
     return useFetchGet(`/api/user/auth/getUserInfo`)
   }
 
+  const getUserInfoDollar = () => {
+    return fetchGet(`/api/user/auth/getUserInfo`)
+  }
+
   return {
     saveUserAuth,
     getUserInfo,
+    getUserInfoDollar,
   }
 }
 
@@ -291,7 +358,7 @@ export const useApi = () => {
     hospital: useHospitalApi(),
     dictionary: useDictionaryApi(),
     order: useOrderApi(),
-    weixin: useWeixinApi(),
+    alipay: useAlipayApi(),
     patient: usePatientApi(),
     user: useUserApi(),
     loginBySms,

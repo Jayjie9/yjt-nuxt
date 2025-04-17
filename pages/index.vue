@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, OfficeBuilding, Clock, ArrowRight, Notification, Warning } from '@element-plus/icons-vue'
+import { Search, OfficeBuilding, Clock, ArrowDown, ArrowRight, Notification, Warning, Location } from '@element-plus/icons-vue'
 import { useApi } from '~/composables'
 import { useRouter } from 'nuxt/app'
 import type { Hospital, HospitalQueryParams } from '~/types'
@@ -24,6 +24,20 @@ const totalPages = ref(0)
 const searchObj = reactive<HospitalQueryParams>({})
 const hostypeActiveIndex = ref(0)
 const provinceActiveIndex = ref(0)
+const isDistrictExpanded = ref(false)
+// 地区列表
+const initialDisplayCount = 8  // 首行显示的地区数量
+
+const displayedDistricts = computed(() => {
+  if (isDistrictExpanded.value) {
+    return districtList.value
+  }
+  return districtList.value.slice(0, initialDisplayCount)
+})
+
+const toggleDistrictExpand = () => {
+  isDistrictExpanded.value = !isDistrictExpanded.value
+}
 
 // 数据列表
 const hospitalList = ref<Hospital[]>([])
@@ -48,27 +62,29 @@ const stopNotices = ref([
   '中日友好医院中西医结合心内科门诊停诊公告'
 ])
 
-// 初始化数据
-onMounted(() => {
-  init()
-  getHospitalList()
-})
+// 修改初始化函数
+const { data: districtData } = await useAsyncData('districts', () =>
+  dictionary.findByParentIdDollar('86')
+)
 
-// 初始化医院等级和地区列表
-const init = async () => {
+const { data: hostypeData } = await useAsyncData('hostype', () =>
+  dictionary.findByDictCodeDollar('Hostype')
+)
+
+const init = () => {
   try {
     // 查询医院等级列表
-    const { data: hostypeData } = await dictionary.findByDictCode('Hostype')
     hostypeList.value = [{ id: 0, name: '全部', value: '' }]
-    if (hostypeData.value) {
-      hostypeList.value.push(...hostypeData.value)
+    if (hostypeData.value?.data?.data) {  // 修改这里，增加安全访问
+      let names = hostypeData.value.data.data
+      hostypeList.value.push(...names)
     }
 
     // 查询地区数据
-    const { data: districtData } = await dictionary.findByDictCode('Beijing')
     districtList.value = [{ id: 0, name: '全部', value: '' }]
-    if (districtData.value) {
-      districtList.value.push(...districtData.value)
+    if (districtData.value?.data?.data) {  // 修改这里，增加安全访问
+      let dists = districtData.value.data.data
+      districtList.value.push(...dists)
     }
   } catch (error) {
     console.error('初始化数据失败', error)
@@ -78,15 +94,17 @@ const init = async () => {
 // 获取医院列表
 const getHospitalList = async () => {
   try {
-    const { data: response } = await hospital.getHospPageList(page.value, limit.value, searchObj)
-    if (response.value) {
-      hospitalList.value = response.value.content
-      totalPages.value = response.value.totalPages
+    const { data: response } = await hospital.getHospPageListDollar(page.value, limit.value, searchObj)
+    if (response.data) {
+      hospitalList.value = response.data.content
+
+      totalPages.value = response.data.totalPages
     }
   } catch (error) {
     console.error('获取医院列表失败', error)
   }
 }
+
 
 // 根据医院等级筛选
 const hostypeSelect = (hostype: string, index: number) => {
@@ -94,6 +112,8 @@ const hostypeSelect = (hostype: string, index: number) => {
   page.value = 1
   hostypeActiveIndex.value = index
   searchObj.hostype = hostype
+  console.log('searchObj.hostype:' + searchObj.hostype)
+  console.log('index:' + index)
   getHospitalList()
 }
 
@@ -102,7 +122,10 @@ const districtSelect = (districtCode: string, index: number) => {
   hospitalList.value = []
   page.value = 1
   provinceActiveIndex.value = index
-  searchObj.districtCode = districtCode
+  searchObj.provinceCode = districtCode
+  console.log('searchObj.districtCode:' + searchObj.districtCode)
+  console.log('proinceActiveIndex:' + provinceActiveIndex.value)
+
   getHospitalList()
 }
 
@@ -112,7 +135,6 @@ const querySearchAsync = (queryString: string, cb: (suggestions: any[]) => void)
     cb([])
     return
   }
-
   hospital.getByHosname(queryString).then(({ data }) => {
     if (data.value) {
       const suggestions = data.value.map((item: any) => ({
@@ -129,11 +151,6 @@ const querySearchAsync = (queryString: string, cb: (suggestions: any[]) => void)
   })
 }
 
-const test = () => {
-  const jwt = useJWT()
-  console.log(jwt.accessToken.value)
-}
-
 // 选择搜索结果
 const handleSelect = (item: any) => {
   navigateToHospital(item.hoscode)
@@ -143,50 +160,53 @@ const handleSelect = (item: any) => {
 const navigateToHospital = (hoscode: string) => {
   router.push(`/hospital/${hoscode}`)
 }
+
+// serverapi 测试
+const testa = async () => {
+  await $fetch('/api/test/test')
+}
+
+// 初始化数据
+init()
+await getHospitalList()
+onMounted(() => { })
+
 </script>
 
 <template>
   <div class="home-page">
-    <!-- 轮播图区域 -->
-    <div class="banner-section">
-      <el-carousel height="400px" :interval="5000" arrow="always" indicator-position="outside" class="main-carousel">
-        <el-carousel-item v-for="item in 2" :key="item">
-          <div class="carousel-content">
-            <img src="~/assets/images/web-banner1.png" alt="医院轮播图" class="carousel-image">
-            <div class="carousel-overlay">
-              <h2 class="carousel-title">便捷就医 · 健康生活</h2>
-              <p class="carousel-desc">提供全国知名医院挂号、问诊服务</p>
-            </div>
-          </div>
-        </el-carousel-item>
-      </el-carousel>
-    </div>
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <h1 class="hero-title">在线医疗预约平台</h1>
+        <p class="hero-subtitle">便捷挂号，智慧就医，为您的健康保驾护航</p>
 
-    <!-- 搜索区域 -->
-    <div class="search-section">
-      <div class="search-container">
-        <div class="search-title">
-          <h3>查找医院</h3>
-          <p>全国超过2000家医院在线挂号</p>
-        </div>
-        <div class="search-box">
+        <!-- 搜索区域 -->
+        <div class="search-container">
           <el-autocomplete class="search-input" v-model="searchName" :fetch-suggestions="querySearchAsync"
-            placeholder="请输入医院名称" @select="handleSelect" :trigger-on-focus="false" highlight-first-item>
+            placeholder="搜索医院名称、科室或疾病" @select="handleSelect" :trigger-on-focus="false" highlight-first-item>
             <template #prefix>
               <el-icon>
                 <Search />
               </el-icon>
             </template>
-            <template #suffix>
-              <el-button type="primary" class="search-btn">搜索</el-button>
-            </template>
             <template #default="{ item }">
               <div class="search-suggestion-item">
-                <span>{{ item.hosname }}</span>
-                <span class="hospital-level">{{ item.param?.hostypeString }}</span>
+                <div class="suggestion-main">
+                  <span class="suggestion-name">{{ item.hosname }}</span>
+                  <span class="suggestion-level">{{ item.param?.hostypeString }}</span>
+                </div>
+                <span class="suggestion-address">{{ item.param?.fullAddress }}</span>
               </div>
             </template>
           </el-autocomplete>
+        </div>
+
+        <!-- 快速入口 -->
+        <div class="quick-access">
+          <div v-for="dept in commonDepts.slice(0, 6)" :key="dept" class="quick-access-item">
+            {{ dept }}
+          </div>
         </div>
       </div>
     </div>
@@ -194,129 +214,121 @@ const navigateToHospital = (hoscode: string) => {
     <!-- 主要内容区域 -->
     <div class="main-content">
       <div class="content-left">
-        <!-- 筛选区域 -->
+        <!-- 筛选面板 -->
         <div class="filter-panel">
-          <div class="panel-header">
-            <h3>医院筛选</h3>
-          </div>
-          <div class="filter-options">
-            <div class="filter-group">
-              <span class="filter-label">等级：</span>
-              <div class="filter-items">
-                <span v-for="(item, index) in hostypeList" :key="item.id" class="filter-tag"
-                  :class="{ 'filter-tag-active': hostypeActiveIndex === index }"
-                  @click="hostypeSelect(item.value, index)">
-                  {{ item.name }}
-                </span>
-              </div>
+          <div class="filter-group">
+            <div class="filter-label">医院等级</div>
+            <div class="filter-options">
+              <el-tag v-for="(item, index) in hostypeList" :key="item.id"
+                :class="{ 'is-active': hostypeActiveIndex === index }" @click="hostypeSelect(item.value, index)"
+                :effect="hostypeActiveIndex === index ? 'dark' : 'plain'">
+                {{ item.name }}
+              </el-tag>
             </div>
+          </div>
 
-            <div class="filter-group">
-              <span class="filter-label">地区：</span>
-              <div class="filter-items">
-                <span v-for="(item, index) in districtList" :key="item.id" class="filter-tag"
-                  :class="{ 'filter-tag-active': provinceActiveIndex === index }"
-                  @click="districtSelect(item.value, index)">
-                  {{ item.name }}
-                </span>
-              </div>
+          <div class="filter-group">
+            <div class="filter-label">所在地区</div>
+            <div class="filter-options">
+              <el-tag v-for="(item, index) in displayedDistricts" :key="item.id"
+                :class="{ 'is-active': provinceActiveIndex === index }" @click="districtSelect(item.value, index)"
+                :effect="provinceActiveIndex === index ? 'dark' : 'plain'">
+                {{ item.name }}
+              </el-tag>
+              <el-button v-if="districtList.length > initialDisplayCount" link class="expand-button"
+                @click="toggleDistrictExpand">
+                {{ isDistrictExpanded ? '收起' : '展开' }}
+                <el-icon class="expand-icon" :class="{ 'is-expanded': isDistrictExpanded }">
+                  <ArrowDown />
+                </el-icon>
+              </el-button>
             </div>
           </div>
         </div>
 
         <!-- 医院列表 -->
-        <div class="hospital-grid">
+        <div class="hospital-list">
           <el-card v-for="item in hospitalList" :key="item.id" class="hospital-card" shadow="hover"
             @click="navigateToHospital(item.hoscode)">
-            <div class="hospital-card-content">
+            <div class="hospital-header">
+              <div class="hospital-logo">
+                <img v-if="item.logoData" :src="`data:image/jpeg;base64,${item.logoData}`" :alt="item.hosname" />
+                <el-icon v-else>
+                  <OfficeBuilding />
+                </el-icon>
+              </div>
               <div class="hospital-info">
                 <h3 class="hospital-name">{{ item.hosname }}</h3>
-                <div class="hospital-meta">
-                  <div class="meta-item">
-                    <el-icon>
-                      <OfficeBuilding />
-                    </el-icon>
-                    <span>{{ item.param.hostypeString }}</span>
-                  </div>
-                  <div class="meta-item">
-                    <el-icon>
-                      <Clock />
-                    </el-icon>
-                    <span>每天{{ item.bookingRule.releaseTime }}放号</span>
-                  </div>
+                <div class="hospital-tags">
+                  <el-tag size="small" type="success" effect="plain" v-if="item.bookingRule">
+                    预约挂号
+                  </el-tag>
+                  <el-tag size="small" type="info" effect="plain">
+                    {{ item.param?.hostypeString || '未知等级' }}
+                  </el-tag>
                 </div>
               </div>
-              <img :src="`data:image/jpeg;base64,${item.logoData}`" :alt="item.hosname" class="hospital-logo">
+            </div>
+
+            <div class="hospital-details">
+              <div class="detail-item">
+                <el-icon>
+                  <Clock />
+                </el-icon>
+                <span>放号时间：{{ item.bookingRule?.releaseTime || '暂无' }}</span>
+              </div>
+              <div class="detail-item">
+                <el-icon>
+                  <Location />
+                </el-icon>
+                <span>{{ item.param?.fullAddress }}</span>
+              </div>
+            </div>
+
+            <div class="hospital-intro" v-if="item.intro">
+              {{ item.intro.substring(0, 100) }}{{ item.intro.length > 100 ? '...' : '' }}
             </div>
           </el-card>
         </div>
       </div>
 
-      <div>
-        <el-button type="primary" @click="test">测试</el-button>
-      </div>
-
       <div class="content-right">
-        <!-- 常见科室 -->
-        <div class="side-panel dept-panel">
+        <!-- 公告面板 -->
+        <div class="notice-panel">
           <div class="panel-header">
-            <h3>常见科室</h3>
-            <div class="view-all">
-              <span>全部</span>
-              <el-icon>
-                <ArrowRight />
-              </el-icon>
-            </div>
-          </div>
-          <div class="dept-list">
-            <span class="dept-item" v-for="dept in commonDepts" :key="dept">{{ dept }}</span>
-          </div>
-        </div>
-
-        <!-- 平台公告 -->
-        <div class="side-panel notice-panel">
-          <div class="panel-header">
-            <div class="header-with-icon">
+            <div class="header-title">
               <el-icon>
                 <Notification />
               </el-icon>
-              <h3>平台公告</h3>
+              <span>最新公告</span>
             </div>
-            <div class="view-all">
-              <span>全部</span>
-              <el-icon>
-                <ArrowRight />
-              </el-icon>
-            </div>
+            <el-button link>查看全部</el-button>
           </div>
+
           <div class="notice-list">
-            <div class="notice-item" v-for="(notice, index) in platformNotices" :key="index">
-              <div class="notice-dot"></div>
+            <div v-for="(notice, index) in platformNotices" :key="index" class="notice-item">
               <span class="notice-text">{{ notice }}</span>
+              <span class="notice-time">{{ new Date().toLocaleDateString() }}</span>
             </div>
           </div>
         </div>
 
-        <!-- 停诊公告 -->
-        <div class="side-panel notice-panel stop-panel">
+        <!-- 停诊信息 -->
+        <div class="notice-panel warning-panel">
           <div class="panel-header">
-            <div class="header-with-icon">
+            <div class="header-title">
               <el-icon>
                 <Warning />
               </el-icon>
-              <h3>停诊公告</h3>
+              <span>停诊信息</span>
             </div>
-            <div class="view-all">
-              <span>全部</span>
-              <el-icon>
-                <ArrowRight />
-              </el-icon>
-            </div>
+            <el-button link>查看全部</el-button>
           </div>
+
           <div class="notice-list">
-            <div class="notice-item" v-for="(notice, index) in stopNotices" :key="index">
-              <div class="notice-dot"></div>
+            <div v-for="(notice, index) in stopNotices" :key="index" class="notice-item">
               <span class="notice-text">{{ notice }}</span>
+              <span class="notice-time">{{ new Date().toLocaleDateString() }}</span>
             </div>
           </div>
         </div>
@@ -325,89 +337,41 @@ const navigateToHospital = (hoscode: string) => {
   </div>
 </template>
 
-
 <style scoped>
-/* 全局页面样式 */
 .home-page {
-  padding-bottom: 40px;
-  background-color: #f5f7fa;
+  min-height: 100vh;
+  background-color: var(--el-bg-color-page);
 }
 
-/* 轮播图样式 */
-.banner-section {
-  width: 100%;
-}
-
-.main-carousel {
-  height: 400px;
-  border-radius: 0;
-}
-
-.carousel-content {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.carousel-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.carousel-overlay {
-  position: absolute;
-  bottom: 80px;
-  left: 10%;
+/* Hero Section */
+.hero-section {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  padding: 60px 20px;
   color: white;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.carousel-title {
-  font-size: 32px;
-  margin: 0 0 10px;
-}
-
-.carousel-desc {
-  font-size: 18px;
-  margin: 0;
-}
-
-/* 搜索区域样式 */
-.search-section {
-  margin-top: -80px;
-  position: relative;
-  z-index: 10;
-}
-
-.search-container {
-  max-width: 800px;
+.hero-content {
+  max-width: 1200px;
   margin: 0 auto;
-  background-color: white;
-  border-radius: 8px;
-  padding: 25px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.search-title {
   text-align: center;
-  margin-bottom: 20px;
 }
 
-.search-title h3 {
-  font-size: 22px;
-  color: #333;
-  margin: 0 0 5px;
+.hero-title {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
 }
 
-.search-title p {
-  font-size: 14px;
-  color: #909399;
-  margin: 0;
+.hero-subtitle {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  margin-bottom: 2rem;
 }
 
-.search-box {
-  width: 100%;
+/* 搜索区域 */
+.search-container {
+  max-width: 600px;
+  margin: 0 auto 2rem;
 }
 
 .search-input {
@@ -417,49 +381,192 @@ const navigateToHospital = (hoscode: string) => {
 .search-input :deep(.el-input__inner) {
   height: 50px;
   font-size: 16px;
-}
-
-.search-btn {
-  height: 36px;
-  margin-right: -8px;
+  border-radius: 25px;
 }
 
 .search-suggestion-item {
+  padding: 8px 0;
+}
+
+.suggestion-main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px 0;
+  margin-bottom: 4px;
 }
 
-.hospital-level {
+.suggestion-name {
+  font-weight: 500;
+}
+
+.suggestion-level {
   font-size: 12px;
-  color: #909399;
+  color: var(--el-text-color-secondary);
+}
+
+.suggestion-address {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+/* 快速入口 */
+.quick-access {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.quick-access-item {
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.quick-access-item:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* 主内容区域 */
 .main-content {
   max-width: 1200px;
-  margin: 30px auto 0;
-  display: flex;
+  margin: -30px auto 0;
+  padding: 0 20px 30px 20px;
+  display: grid;
+  grid-template-columns: 1fr 300px;
   gap: 20px;
-  padding: 0 20px;
-}
-
-.content-left {
-  flex: 1;
-}
-
-.content-right {
-  width: 300px;
+  position: relative;
 }
 
 /* 筛选面板 */
 .filter-panel {
-  background-color: white;
+  background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   padding: 20px;
   margin-bottom: 20px;
+  box-shadow: var(--el-box-shadow-light);
+}
+
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-group:last-child {
+  margin-bottom: 0;
+}
+
+.filter-label {
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--el-text-color-primary);
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-options .el-tag {
+  cursor: pointer;
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.filter-options .el-tag.is-active {
+  background-color: var(--el-color-primary);
+  border-color: var(--el-color-primary);
+  color: white;
+}
+
+/* 医院列表 */
+.hospital-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.hospital-card {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.hospital-card:hover {
+  transform: translateY(-5px);
+}
+
+.hospital-header {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.hospital-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--el-bg-color-page);
+}
+
+.hospital-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hospital-logo .el-icon {
+  font-size: 24px;
+  color: var(--el-text-color-secondary);
+}
+
+.hospital-info {
+  flex: 1;
+}
+
+.hospital-name {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.hospital-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.hospital-details {
+  margin-bottom: 12px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+}
+
+.hospital-intro {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* 右侧面板 */
+.notice-panel {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--el-box-shadow-light);
 }
 
 .panel-header {
@@ -469,266 +576,119 @@ const navigateToHospital = (hoscode: string) => {
   margin-bottom: 15px;
 }
 
-.panel-header h3 {
-  font-size: 18px;
-  margin: 0;
-  color: #303133;
-}
-
-.filter-group {
-  margin-bottom: 15px;
-}
-
-.filter-label {
-  color: #606266;
-  font-weight: 500;
-  margin-right: 10px;
-  display: inline-block;
-  width: 60px;
-}
-
-.filter-items {
-  display: inline-flex;
-  flex-wrap: wrap;
-}
-
-.filter-tag {
-  padding: 6px 12px;
-  margin: 0 8px 8px 0;
-  border-radius: 4px;
-  background-color: #f5f7fa;
-  color: #606266;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.filter-tag:hover {
-  background-color: #e6f1fc;
-  color: #409EFF;
-}
-
-.filter-tag-active {
-  background-color: #409EFF;
-  color: white;
-}
-
-/* 医院列表 */
-.hospital-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 20px;
-}
-
-.hospital-card {
-  cursor: pointer;
-  transition: transform 0.3s;
-}
-
-.hospital-card:hover {
-  transform: translateY(-5px);
-}
-
-.hospital-card-content {
+.header-title {
   display: flex;
-  justify-content: space-between;
-}
-
-.hospital-info {
-  flex: 1;
-  padding-right: 15px;
-}
-
-.hospital-name {
-  font-size: 16px;
-  font-weight: bold;
-  color: #303133;
-  margin: 0 0 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.hospital-meta {
-  display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
 }
 
-.meta-item {
-  display: flex;
-  align-items: center;
-  color: #606266;
-  font-size: 13px;
-}
-
-.meta-item .el-icon {
-  margin-right: 5px;
-  color: #409EFF;
-}
-
-.hospital-logo {
-  width: 80px;
-  height: 80px;
-  border-radius: 4px;
-  object-fit: cover;
-}
-
-/* 侧边栏组件 */
-.side-panel {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.header-with-icon {
-  display: flex;
-  align-items: center;
-}
-
-.header-with-icon .el-icon {
-  margin-right: 8px;
-  font-size: 18px;
-  color: #409EFF;
-}
-
-.view-all {
-  display: flex;
-  align-items: center;
-  color: #909399;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.view-all:hover {
-  color: #409EFF;
-}
-
-.view-all .el-icon {
-  margin-left: 4px;
-}
-
-/* 科室列表 */
-.dept-list {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.dept-item {
-  width: 33.33%;
-  padding: 8px 5px;
-  color: #606266;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.dept-item:hover {
-  color: #409EFF;
-}
-
-/* 公告列表 */
 .notice-list {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
 .notice-item {
   display: flex;
-  align-items: flex-start;
-  padding: 8px 0;
-  cursor: pointer;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
-.notice-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: #409EFF;
-  margin: 7px 8px 0 0;
-  flex-shrink: 0;
+.notice-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .notice-text {
-  color: #606266;
+  color: var(--el-text-color-primary);
   font-size: 14px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   line-height: 1.5;
 }
 
-.notice-item:hover .notice-text {
-  color: #409EFF;
+.notice-time {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
 }
 
-.stop-panel .notice-dot {
-  background-color: #f56c6c;
+.warning-panel .header-title .el-icon {
+  color: var(--el-color-danger);
 }
 
 /* 响应式布局 */
-@media screen and (max-width: 1200px) {
+@media screen and (max-width: 1024px) {
   .main-content {
-    padding: 0 15px;
-  }
-}
-
-@media screen and (max-width: 992px) {
-  .main-content {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .content-right {
-    width: 100%;
-  }
-
-  .hospital-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
   }
 }
 
 @media screen and (max-width: 768px) {
-  .carousel-title {
-    font-size: 26px;
+  .hero-title {
+    font-size: 2rem;
   }
 
-  .carousel-desc {
-    font-size: 16px;
+  .hero-subtitle {
+    font-size: 1rem;
   }
 
-  .search-container {
-    padding: 15px;
+  .quick-access {
+    gap: 10px;
   }
 
-  .filter-label {
-    width: 50px;
+  .quick-access-item {
+    padding: 6px 15px;
+    font-size: 14px;
   }
 
-  .hospital-grid {
+  .hospital-list {
     grid-template-columns: 1fr;
   }
 
-  .dept-item {
-    width: 50%;
+  .content-right {
+    grid-template-columns: 1fr;
   }
 }
 
-@media screen and (max-width: 576px) {
-  .carousel-overlay {
-    bottom: 50px;
-    left: 5%;
+@media screen and (max-width: 480px) {
+  .hero-section {
+    padding: 40px 15px;
   }
 
-  .carousel-title {
-    font-size: 22px;
+  .hero-title {
+    font-size: 1.5rem;
   }
 
-  .search-section {
-    margin-top: -60px;
+  .main-content {
+    padding: 0 15px;
+    margin-top: -20px;
+  }
+
+  .filter-options {
+    gap: 6px;
+  }
+
+  .hospital-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .hospital-logo {
+    width: 80px;
+    height: 80px;
+  }
+
+  .hospital-tags {
+    justify-content: center;
   }
 }
 </style>

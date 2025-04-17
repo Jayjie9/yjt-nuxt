@@ -131,9 +131,7 @@ export const useJWT = () => {
           tokenExpiry.value = accessPayload.exp * 1000
           return true
         }
-      } else {
       }
-
       return false
     } catch (error) {
       console.error('刷新令牌失败:', error)

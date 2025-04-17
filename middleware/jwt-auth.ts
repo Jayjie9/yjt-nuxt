@@ -34,6 +34,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const refreshed = await jwt.refreshAccessToken()
     if (!refreshed) {
       // 刷新失败，需要重新登录
+      // 刷新失败，提醒用户当前登录态失效，但不是直接跳转登录页，而是提示用户重新登录
       userStore.logout()
       if (import.meta.client) {
         window.location.href = '/login'

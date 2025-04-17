@@ -9,7 +9,8 @@ import {
   House,
   Bell,
   Location,
-  Service
+  Service,
+  SwitchButton
 } from '@element-plus/icons-vue'
 
 import { useUserStore } from '~/stores/user'
@@ -20,10 +21,62 @@ const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.LoggedIn)
 const displayName = computed(() => userStore.getUserName)
 
-// 在组件挂载时恢复用户状态
-onMounted(() => {
-  userStore.restoreUserInfo()
-})
+// 生成头像背景色
+const generateAvatarColor = (name: string) => {
+  const colors = [
+    'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+    'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+    'linear-gradient(135deg, #722ed1 0%, #531dab 100%)',
+    'linear-gradient(135deg, #13c2c2 0%, #008f8f 100%)',
+    'linear-gradient(135deg, #eb2f96 0%, #c41d7f 100%)'
+  ]
+  const index = name.charCodeAt(0) % colors.length
+  return colors[index]
+}
+
+// 添加注册路由方法
+const goToRegister = () => {
+  navigateTo('/register')
+}
+
+// 添加客服对话框的状态控制
+const showServiceDialog = ref(false)
+const serviceMessage = ref('')
+const chatMessages = ref([
+  {
+    type: 'service',
+    content: '您好！我是 AI 客服小医，很高兴为您服务。请问有什么可以帮您？',
+    time: new Date().toLocaleTimeString()
+  }
+])
+
+// 打开客服对话框
+const openServiceChat = () => {
+  showServiceDialog.value = true
+}
+
+// 发送消息
+const sendMessage = () => {
+  if (!serviceMessage.value.trim()) return
+
+  // 添加用户消息
+  chatMessages.value.push({
+    type: 'user',
+    content: serviceMessage.value,
+    time: new Date().toLocaleTimeString()
+  })
+
+  // 模拟AI回复
+  setTimeout(() => {
+    chatMessages.value.push({
+      type: 'service',
+      content: '感谢您的咨询。我们会认真记录您的问题，并尽快为您解答。如果您需要更专业的帮助，建议您在线预约相关科室的医生进行咨询。',
+      time: new Date().toLocaleTimeString()
+    })
+  }, 1000)
+
+  serviceMessage.value = ''
+}
 
 // 处理回到首页
 function goHome() {
@@ -40,27 +93,14 @@ async function goToLogin() {
   navigateTo('/login')
 }
 
-// 查找医院
-function goToFindHospital() {
+// 病情分析
+async function goToAnalysisIllness() {
   navigateTo('/hospital/list')
 }
 
 // 预约挂号
-function goToAppointment() {
-  if (!isLoggedIn.value) {
-    ElMessage.warning('请先登录')
-    return navigateTo('/login')
-  }
-  navigateTo('/appointment')
-}
-
-// 就诊人管理
-function goToPatients() {
-  if (!isLoggedIn.value) {
-    ElMessage.warning('请先登录')
-    return navigateTo('/login')
-  }
-  navigateTo('/user/patients')
+async function goToAppointment() {
+  navigateTo('/')
 }
 
 const handleLoginCommand = (command: string | number | object) => {
@@ -73,56 +113,58 @@ const handleLoginCommand = (command: string | number | object) => {
     }
     return
   }
-
   if (command === '个人中心') {
-    navigateTo('/user/profile')
+    navigateTo('/user')
     return
   }
-
   if (command === '挂号订单') {
-    navigateTo('/user/orders')
+    navigateTo('/order')
     return
   }
-
   if (command === '就诊人管理') {
-    navigateTo('/user/patients')
+    navigateTo('/patient')
     return
   }
-
   if (import.meta.client) ElMessage(`点击了${command}选项`)
 }
+
+// 在组件挂载时恢复用户状态
+onMounted(() => {
+  userStore.restoreUserInfo()
+})
 </script>
+
 
 <template>
   <div class="header-container">
     <div class="wrapper">
       <!-- logo -->
       <div class="left-wrapper v-link selected" @click="goHome">
-        <img style="width: 50px; height: 50px" src="~assets/images/logo.png" alt="logo">
+        <img src="~assets/images/logo.png" alt="logo">
         <span class="text">医捷通</span>
       </div>
 
       <!-- 导航菜单 -->
       <div class="nav-wrapper">
-        <div class="nav-item" @click="goHome">
+        <div class="nav-item v-link" @click="goHome">
           <el-icon>
             <House />
           </el-icon>
           <span>首页</span>
         </div>
-        <div class="nav-item" @click="goToFindHospital">
+        <div class="nav-item v-link" @click="goToAnalysisIllness">
           <el-icon>
             <Location />
           </el-icon>
-          <span>找医院</span>
+          <span>病症分析</span>
         </div>
-        <div class="nav-item" @click="goToAppointment">
+        <div class="nav-item v-link" @click="goToAppointment">
           <el-icon>
             <Calendar />
           </el-icon>
           <span>预约挂号</span>
         </div>
-        <div class="nav-item" @click="goToHelp">
+        <div class="nav-item v-link" @click="goToHelp">
           <el-icon>
             <QuestionFilled />
           </el-icon>
@@ -132,66 +174,83 @@ const handleLoginCommand = (command: string | number | object) => {
 
       <!-- 右侧用户菜单 -->
       <div class="right-wrapper">
-        <div class="v-link clickable" @click="goToPatients">
-          <el-icon>
-            <Document />
-          </el-icon>
-          <span>就诊人管理</span>
-        </div>
-
-        <div class="v-link clickable notification">
-          <el-icon>
-            <Bell />
-          </el-icon>
-          <span>消息</span>
-          <span class="badge">2</span>
-        </div>
-
-        <div class="v-link clickable" @click="goToHelp">
-          <el-icon>
-            <Service />
-          </el-icon>
-          <span>客服</span>
-        </div>
-
-        <!-- 登录/用户信息下拉菜单 -->
-        <template v-if="!isLoggedIn">
-          <div class="login-btn" @click="goToLogin">
+        <!-- 精简操作按钮，保留最重要的功能 -->
+        <div class="action-items">
+          <div class="v-link notification">
             <el-icon>
-              <User />
+              <Bell />
             </el-icon>
-            <span>登录/注册</span>
+            <span>消息</span>
+            <span class="badge">2</span>
+          </div>
+
+          <div class="v-link" @click="openServiceChat">
+            <el-icon>
+              <Service />
+            </el-icon>
+            <span>客服</span>
+          </div>
+        </div>
+
+        <!-- 登录/用户信息 -->
+        <template v-if="!isLoggedIn">
+          <div class="auth-section">
+            <el-button class="register-btn" text @click="goToRegister">
+              注册账号
+            </el-button>
+            <el-button class="login-btn" type="primary" @click="goToLogin">
+              <el-icon>
+                <User />
+              </el-icon>
+              登录
+            </el-button>
           </div>
         </template>
 
         <template v-else>
-          <el-dropdown @command="handleLoginCommand" class="user-dropdown">
-            <div class="el-dropdown-link">
-              <div class="avatar">{{ displayName.charAt(0) }}</div>
-              <span>{{ displayName }}</span>
+          <el-dropdown @command="handleLoginCommand" class="user-dropdown" trigger="click">
+            <div class="user-info">
+              <div class="avatar-wrapper">
+                <div class="avatar" :style="{ background: generateAvatarColor(displayName) }">
+                  {{ displayName.charAt(0).toUpperCase() }}
+                </div>
+                <div class="online-status"></div>
+              </div>
+              <div class="user-details">
+                <span class="username">{{ displayName }}</span>
+                <span class="user-role">普通用户</span>
+              </div>
               <el-icon class="el-icon--right">
                 <ArrowDown />
               </el-icon>
             </div>
             <template #dropdown>
-              <el-dropdown-menu>
+              <el-dropdown-menu class="user-dropdown-menu">
+                <div class="dropdown-header">
+                  <div class="user-info-brief">
+                    <span class="greeting">你好，{{ displayName }}</span>
+                    <span class="user-id">ID: {{ '未知' }}</span>
+                  </div>
+                </div>
                 <el-dropdown-item command="个人中心">
                   <el-icon>
                     <User />
                   </el-icon>个人中心
-                </el-dropdown-item>
-                <el-dropdown-item command="挂号订单">
-                  <el-icon>
-                    <Document />
-                  </el-icon>挂号订单
                 </el-dropdown-item>
                 <el-dropdown-item command="就诊人管理">
                   <el-icon>
                     <Document />
                   </el-icon>就诊人管理
                 </el-dropdown-item>
+                <el-dropdown-item command="挂号订单">
+                  <el-icon>
+                    <Document />
+                  </el-icon>挂号订单
+                </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>
-                  退出登录
+                  <el-icon>
+                    <SwitchButton />
+                  </el-icon>退出登录
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -200,29 +259,37 @@ const handleLoginCommand = (command: string | number | object) => {
       </div>
     </div>
   </div>
+
+  <!-- 客服对话框 -->
 </template>
 
 <style scoped>
 .header-container {
-  position: sticky;
+  position: fixed;
   top: 0;
-  width: 100%;
-  background-color: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  z-index: 100;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.8);
+  /* 为导航栏添加毛玻璃效果，提升视觉层次感 */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 15px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
 }
 
 .wrapper {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
-  height: 70px;
+  height: 100%;
+  gap: 40px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
-/* 左侧 Logo 区域 */
+/* Logo 样式 */
 .left-wrapper {
   display: flex;
   align-items: center;
@@ -230,7 +297,9 @@ const handleLoginCommand = (command: string | number | object) => {
 }
 
 .left-wrapper img {
-  transition: transform 0.3s ease;
+  width: 40px;
+  height: 40px;
+  transition: transform 0.3s;
 }
 
 .left-wrapper:hover img {
@@ -241,72 +310,64 @@ const handleLoginCommand = (command: string | number | object) => {
   margin-left: 12px;
   font-size: 20px;
   font-weight: 600;
-  color: #409EFF;
-  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-/* 中间导航菜单 */
+/* 导航菜单 */
 .nav-wrapper {
   display: flex;
   align-items: center;
-  gap: 25px;
-  margin-left: 40px;
+  gap: 10px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 4px;
-  color: #606266;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: var(--el-text-color-regular);
   transition: all 0.3s;
 }
 
 .nav-item:hover {
-  background-color: #f0f9ff;
-  color: #409EFF;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
 }
 
-.nav-item .el-icon {
-  font-size: 18px;
-}
-
-/* 右侧菜单区域 */
+/* 右侧操作区 */
 .right-wrapper {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+}
+
+.action-items {
+  display: flex;
+  gap: 15px;
 }
 
 .v-link {
-  position: relative;
-  font-size: 14px;
-  color: #606266;
-  transition: color 0.3s;
   display: flex;
   align-items: center;
-  gap: 5px;
-}
-
-.v-link .el-icon {
-  font-size: 16px;
-}
-
-.v-link.clickable {
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: var(--el-text-color-regular);
+  transition: all 0.3s;
   cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 4px;
 }
 
-.v-link.clickable:hover {
-  color: #409EFF;
-  background-color: #f0f9ff;
+.v-link:hover {
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  cursor: pointer;
 }
 
-/* 通知图标样式 */
+/* 通知徽标 */
 .notification {
   position: relative;
 }
@@ -315,121 +376,153 @@ const handleLoginCommand = (command: string | number | object) => {
   position: absolute;
   top: -2px;
   right: -2px;
-  background-color: #f56c6c;
-  color: white;
-  border-radius: 10px;
-  font-size: 12px;
-  padding: 0 5px;
   min-width: 16px;
   height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--el-color-danger);
+  color: white;
+  font-size: 12px;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
-/* 登录按钮 */
+/* 登录注册区域样式 */
+.auth-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.register-btn {
+  font-size: 14px;
+}
+
 .login-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  padding: 8px 15px;
-  border-radius: 20px;
-  background-color: #409EFF;
-  color: #ffffff;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 6px;
   font-weight: 500;
   transition: all 0.3s;
 }
 
-.login-btn:hover {
-  background-color: #66b1ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
-}
-
-/* 下拉菜单样式 */
-.user-dropdown {
-  cursor: pointer;
-}
-
-.el-dropdown-link {
+/* 用户信息样式 */
+.user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 4px;
+  gap: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
   transition: all 0.3s;
 }
 
-.el-dropdown-link:hover {
-  background-color: #f5f7fa;
-  color: #409EFF;
+.user-info:hover {
+  background: var(--el-color-primary-light-9);
+}
+
+.avatar-wrapper {
+  position: relative;
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: #409EFF;
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 16px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: transform 0.3s;
+}
+
+.online-status {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--el-color-success);
+  border: 2px solid white;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.username {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.user-role {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+/* 下拉菜单样式优化 */
+.user-dropdown-menu {
+  min-width: 220px;
+  padding: 0;
+}
+
+.dropdown-header {
+  padding: 16px;
+  background: var(--el-color-primary-light-9);
+  border-radius: 4px 4px 0 0;
+}
+
+.user-info-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.greeting {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.user-id {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 :deep(.el-dropdown-menu__item) {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 12px 16px;
 }
 
-:deep(.el-dropdown-menu__item .el-icon) {
+:deep(.el-dropdown-menu__item i) {
   margin-right: 0;
 }
 
-/* 响应式设计 */
-@media screen and (max-width: 1024px) {
-  .nav-wrapper {
-    display: none;
-  }
-}
-
 @media screen and (max-width: 768px) {
-  .wrapper {
-    height: 60px;
-    padding: 0 15px;
-  }
-
-  .left-wrapper .text {
-    font-size: 18px;
-  }
-
-  .right-wrapper {
-    gap: 10px;
-  }
-
-  .v-link span:not(.badge) {
+  .user-details {
     display: none;
   }
 
-  .login-btn span {
+  .auth-section {
+    gap: 4px;
+  }
+
+  .register-btn {
     display: none;
   }
 
-  .el-dropdown-link span {
-    display: none;
-  }
-}
-
-@media screen and (max-width: 576px) {
-  .left-wrapper img {
-    width: 40px !important;
-    height: 40px !important;
-  }
-
-  .v-link.notification {
-    display: none;
+  .login-btn {
+    padding: 8px 16px;
   }
 }
 </style>

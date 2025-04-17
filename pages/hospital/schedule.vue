@@ -1,149 +1,12 @@
-<template>
-  <!-- 医院排班页面 -->
-  <div class="nav-container page-component">
-    <!-- 左侧导航栏 -->
-    <div class="nav left-nav">
-      <div class="nav-item">
-        <NuxtLink :to="`/hospital/${hoscode}`" class="v-link clickable dark">预约挂号</NuxtLink>
-      </div>
-      <div class="nav-item">
-        <NuxtLink :to="`/hospital/detail/${hoscode}`" class="v-link clickable dark">医院详情</NuxtLink>
-      </div>
-      <div class="nav-item">
-        <NuxtLink :to="`/hospital/notice/${hoscode}`" class="v-link clickable dark">预约须知</NuxtLink>
-      </div>
-      <div class="nav-item">
-        <span class="v-link clickable dark">停诊信息</span>
-      </div>
-      <div class="nav-item">
-        <span class="v-link clickable dark">查询/取消</span>
-      </div>
-    </div>
-    <!-- 左侧导航结束 -->
-
-    <!-- 右侧内容区域 -->
-    <div class="page-container">
-      <div class="hospital-source-list">
-        <!-- 医院名称和科室显示 -->
-        <div class="header-wrapper" style="justify-content:normal">
-          <span class="v-link clickable" @click="show()">{{ baseMap.hosname }}</span>
-          <div class="split"></div>
-          <div>{{ baseMap.bigname }}</div>
-        </div>
-        <div class="title mt20">{{ baseMap.depname }}</div>
-
-        <!-- 日期选择区域 -->
-        <div class="mt60">
-          <div class="title-wrapper">{{ baseMap.workDateString }}</div>
-          <div class="calendar-list-wrapper">
-            <!-- 日期列表，动态添加样式 -->
-            <div v-for="(item, index) in bookingScheduleList" :key="item.id" :class="'calendar-item ' + item.curClass"
-              style="width: 124px;" @click="selectDate(item, index)">
-              <div class="date-wrapper">
-                <span>{{ item.workDate }}</span>
-                <span class="week">{{ item.dayOfWeek }}</span>
-              </div>
-              <div class="status-wrapper" v-if="item.status == 0">{{ item.availableNumber == -1 ? '无号' :
-                item.availableNumber == 0 ? '约满' : '有号' }}</div>
-              <div class="status-wrapper" v-if="item.status == 1">即将放号</div>
-              <div class="status-wrapper" v-if="item.status == -1">停止挂号</div>
-            </div>
-          </div>
-
-          <!-- 分页控件 -->
-          <el-pagination class="pagination" layout="prev, pager, next" :current-page="page" :total="total"
-            :page-size="limit" @current-change="getPage">
-          </el-pagination>
-        </div>
-
-        <!-- 即将放号倒计时区域 -->
-        <div class="countdown-wrapper mt60" v-if="!tabShow">
-          <div class="countdonw-title">{{ time }}<span class="v-link selected">{{ baseMap.releaseTime }}</span>放号</div>
-          <div class="countdown-text">
-            倒 计 时
-            <div>
-              <span class="number">{{ timeString }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 上午号源列表 -->
-        <div class="mt60" v-if="tabShow">
-          <div class="">
-            <div class="list-title">
-              <div class="block"></div>
-              上午号源
-            </div>
-            <div v-for="item in morningSchedules" :key="item.id">
-              <div class="list-item">
-                <div class="item-wrapper">
-                  <div class="title-wrapper">
-                    <div class="title">{{ item.title }}</div>
-                    <div class="split"></div>
-                    <div class="name">{{ item.docname }}</div>
-                  </div>
-                  <div class="special-wrapper">{{ item.skill }}</div>
-                </div>
-                <div class="right-wrapper">
-                  <div class="fee">￥{{ item.amount }}</div>
-                  <div class="button-wrapper">
-                    <div class="v-button" @click="booking(item.id, item.availableNumber)"
-                      :style="item.availableNumber == 0 || pageFirstStatus == -1 ? 'background-color: #7f828b;' : ''">
-                      <span>剩余<span class="number">{{ item.availableNumber }}</span></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 下午号源列表 -->
-        <div class="mt60" v-if="tabShow">
-          <div class="">
-            <div class="list-title">
-              <div class="block"></div>
-              下午号源
-            </div>
-            <div v-for="item in afternoonSchedules" :key="item.id">
-              <div class="list-item">
-                <div class="item-wrapper">
-                  <div class="title-wrapper">
-                    <div class="title">{{ item.title }}</div>
-                    <div class="split"></div>
-                    <div class="name">{{ item.docname }}</div>
-                  </div>
-                  <div class="special-wrapper">{{ item.skill }}</div>
-                </div>
-                <div class="right-wrapper">
-                  <div class="fee">￥{{ item.amount }}</div>
-                  <div class="button-wrapper">
-                    <div class="v-button" @click="booking(item.id, item.availableNumber)"
-                      :style="item.availableNumber == 0 || pageFirstStatus == -1 ? 'background-color: #7f828b;' : ''">
-                      <span>剩余<span class="number">{{ item.availableNumber }}</span></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- 右侧内容区域结束 -->
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { useApi } from '~/composables' // 修复导入路径
+import { useApi } from '~/composables'
 import { useRoute, useRouter } from 'nuxt/app'
-import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useHead } from '#imports'
+import { Sunset, Sunrise, Clock, CircleClose, Loading } from '@element-plus/icons-vue'
+import type { BookingSchedule, BaseMap, BookingScheduleResponse } from '~/types/schedule'
+import type { DoctorSchedule } from '~/types/schedule'
 
-/**
- * 导入样式文件
- */
 useHead({
   link: [
     { rel: 'stylesheet', href: '/css/hospital_personal.css' },
@@ -151,25 +14,19 @@ useHead({
   ]
 })
 
-/**
- * 初始化API和路由
- */
 const api = useApi()
 const route = useRoute()
 const router = useRouter()
 
-/**
- * 页面状态数据
- */
 // 医院与科室编码
 const hoscode = ref('')
 const depcode = ref('')
 const workDate = ref('')
 
 // 排班相关数据
-const bookingScheduleList = ref<any[]>([])
-const scheduleList = ref<any[]>([])
-const baseMap = ref<any>({})
+const bookingScheduleList = ref<BookingSchedule[]>([])
+const scheduleList = ref<DoctorSchedule[]>([])
+const baseMap = ref<BaseMap>({} as BaseMap)
 
 // 页面状态控制
 const tabShow = ref(true)
@@ -181,54 +38,40 @@ const timeString = ref('')
 const time = ref('今天')
 const timer = ref<any>(null)
 const pageFirstStatus = ref(0)
-
-/**
- * 计算属性：过滤上下午排班数据
- */
+const loading = ref(true)
+// 计算属性：过滤上下午排班数据
 // 上午排班列表（workTime === 0）
 const morningSchedules = computed(() =>
   scheduleList.value.filter(item => item.workTime === 0)
 )
-
 // 下午排班列表（workTime === 1）
 const afternoonSchedules = computed(() =>
   scheduleList.value.filter(item => item.workTime === 1)
 )
 
-/**
- * 生命周期钩子
- */
-// 组件挂载时初始化数据
-onMounted(() => {
-  hoscode.value = route.params.hoscode as string || '1000_0'
-  depcode.value = route.query.depcode as string
-  workDate.value = getCurDate()
-  getBookingScheduleRule()
+// 添加展开收起控制
+const morningExpanded = ref(false)
+const afternoonExpanded = ref(false)
+const initialDisplayCount = 6
+
+// 计算显示的排班列表
+const displayMorningSchedules = computed(() => {
+  return morningExpanded.value
+    ? morningSchedules.value
+    : morningSchedules.value.slice(0, initialDisplayCount)
 })
 
-// 组件卸载时清除定时器
-onUnmounted(() => {
-  if (timer.value) {
-    clearInterval(timer.value)
-  }
+const displayAfternoonSchedules = computed(() => {
+  return afternoonExpanded.value
+    ? afternoonSchedules.value
+    : afternoonSchedules.value.slice(0, initialDisplayCount)
 })
 
 /**
- * 分页操作处理
- * @param pageNum 页码
- */
-const getPage = (pageNum = 1) => {
-  page.value = pageNum
-  workDate.value = ''
-  activeIndex.value = 0
-  getBookingScheduleRule()
-}
-
-/**
- * 获取可预约排班分页数据
- * 加载医院科室的排班信息
+ * 获取可预约排班分页数据: 加载医院科室的排班信息
  */
 const getBookingScheduleRule = async () => {
+  loading.value = true
   try {
     const { data } = await api.hospital.getBookingScheduleRule(
       page.value,
@@ -238,34 +81,26 @@ const getBookingScheduleRule = async () => {
     )
 
     if (data.value) {
-      // 类型断言确保TypeScript正确识别数据结构
-      const responseData = data.value as {
-        bookingScheduleList: any[]
-        total: number
-        baseMap: Record<string, any>
+      const response = data.value as BookingScheduleResponse
+      if (response.code === 200) {
+        bookingScheduleList.value = response.data.bookingScheduleList
+        total.value = response.data.total
+        baseMap.value = response.data.baseMap
+        // 处理排班项样式
+        dealClass()
+        // 分页后workDate为空，默认选中第一个
+        if (!workDate.value && bookingScheduleList.value.length > 0) {
+          workDate.value = bookingScheduleList.value[0].workDate
+        }
+        // 判断当天是否停止预约 status == -1 表示停止预约
+        if (workDate.value === getCurDate() && bookingScheduleList.value.length > 0) {
+          pageFirstStatus.value = bookingScheduleList.value[0].status
+        } else {
+          pageFirstStatus.value = 0
+        }
+        // 获取排班详情
+        findScheduleList()
       }
-
-      bookingScheduleList.value = responseData.bookingScheduleList
-      total.value = responseData.total
-      baseMap.value = responseData.baseMap
-
-      // 处理排班项样式
-      dealClass()
-
-      // 分页后workDate为空，默认选中第一个
-      if (!workDate.value && bookingScheduleList.value.length > 0) {
-        workDate.value = bookingScheduleList.value[0].workDate
-      }
-
-      // 判断当天是否停止预约 status == -1 表示停止预约
-      if (workDate.value === getCurDate() && bookingScheduleList.value.length > 0) {
-        pageFirstStatus.value = bookingScheduleList.value[0].status
-      } else {
-        pageFirstStatus.value = 0
-      }
-
-      // 获取排班详情
-      findScheduleList()
     }
   } catch (error) {
     ElMessage.error('获取排班数据失败')
@@ -274,8 +109,30 @@ const getBookingScheduleRule = async () => {
 }
 
 /**
- * 处理排班项的样式类
- * 根据状态和选中情况动态添加CSS类
+ * 获取排班信息详情: 根据选中日期加载具体医生排班
+ */
+const findScheduleList = async () => {
+  try {
+    const { data } = await api.hospital.findScheduleList(
+      hoscode.value,
+      depcode.value,
+      workDate.value
+    )
+
+    if (data.value) {
+      scheduleList.value = data.value.data as DoctorSchedule[]
+      // console.log("排班列表数据:", JSON.stringify(scheduleList.value, null, 2))
+    }
+  } catch (error) {
+    ElMessage.error('获取排班详情失败')
+    console.error(error)
+  } finally {
+    loading.value = false
+  }
+}
+
+/**
+ * 处理排班项的样式类: 根据状态和选中情况动态添加CSS类
  */
 const dealClass = () => {
   bookingScheduleList.value.forEach(item => {
@@ -301,26 +158,23 @@ const dealClass = () => {
     item.curClass = curClass
   })
 }
-
 /**
- * 获取排班信息详情
- * 根据选中日期加载具体医生排班
+ * 分页操作处理
+ * @param pageNum 页码
  */
-const findScheduleList = async () => {
-  try {
-    const { data } = await api.hospital.findScheduleList(
-      hoscode.value,
-      depcode.value,
-      workDate.value
-    )
-
-    if (data.value) {
-      scheduleList.value = data.value as any[]
-    }
-  } catch (error) {
-    ElMessage.error('获取排班详情失败')
-    console.error(error)
-  }
+const getPage = (pageNum = 1) => {
+  page.value = pageNum
+  workDate.value = ''
+  activeIndex.value = 0
+  getBookingScheduleRule()
+}
+// 获取状态样式类
+const getStatusClass = (item: BookingSchedule) => {
+  if (item.status === -1) return 'disabled'
+  if (item.status === 1) return 'upcoming'
+  if (item.availableNumber === -1) return 'disabled'
+  if (item.availableNumber === 0) return 'full'
+  return 'available'
 }
 
 /**
@@ -329,8 +183,11 @@ const findScheduleList = async () => {
  * @param index 索引
  */
 const selectDate = (item: any, index: number) => {
+  // console.log("------scheduleList.value-------:" + scheduleList.value);
+
   workDate.value = item.workDate
   activeIndex.value = index
+  loading.value = true
 
   // 清理定时器
   if (timer.value) {
@@ -437,8 +294,532 @@ const booking = (scheduleId: string, availableNumber: number) => {
 const show = () => {
   router.push(`/hospital/${hoscode.value}`)
 }
+
+// 组件挂载时初始化数据
+onMounted(() => {
+  hoscode.value = route.query.hoscode as string
+  depcode.value = route.query.depcode as string
+  workDate.value = getCurDate()
+  getBookingScheduleRule()
+})
+
+// 组件卸载时清除定时器
+onUnmounted(() => {
+  if (timer.value) {
+    clearInterval(timer.value)
+  }
+})
 </script>
 
+<template>
+  <div class="hospital-page">
+    <!-- 医院头部信息区 -->
+    <div class="hospital-hero">
+      <div class="hero-content">
+        <div class="hospital-basic">
+          <!-- 添加骨架屏加载效果 -->
+          <template v-if="loading">
+            <div class="loading-container">
+              <el-icon class="loading-icon">
+                <Loading />
+              </el-icon>
+              <span class="loading-text">加载中...</span>
+            </div>
+          </template>
+          <!-- 实际内容 -->
+          <template v-else>
+            <h1 class="hospital-title" @click="show">{{ baseMap.hosname }}</h1>
+            <div class="hospital-tags">
+              <el-tag size="large" type="primary" effect="plain">{{ baseMap.bigname }}</el-tag>
+              <el-tag size="large" type="danger" effect="plain">{{ baseMap.depname }}</el-tag>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <!-- 排班日历卡片 -->
+      <el-card class="schedule-calendar">
+        <template #header>
+          <div class="card-header">
+            <h3>选择就诊日期</h3>
+            <div class="schedule-info">
+              <span class="info-item">
+                <el-icon>
+                  <Clock />
+                </el-icon>
+                放号时间：{{ baseMap.releaseTime }}
+              </span>
+              <span class="info-item">
+                <el-icon>
+                  <CircleClose />
+                </el-icon>
+                停止挂号：{{ baseMap.stopTime }}
+              </span>
+            </div>
+          </div>
+        </template>
+
+        <div class="schedule-list">
+          <div v-for="(item, index) in bookingScheduleList" :key="item.workDate" class="schedule-item" :class="[
+            getStatusClass(item),
+            { 'active': workDate === item.workDate }
+          ]" @click="selectDate(item, index)">
+            <div class="date-info">
+              <span class="date">{{ item.workDateMd }}</span>
+              <span class="week">{{ item.dayOfWeek }}</span>
+            </div>
+            <div class="status-badge" :class="getStatusClass(item)">
+              <template v-if="item.status === 0">
+                {{ item.availableNumber === -1 ? '无号' : item.availableNumber === 0 ? '约满' : '有号' }}
+              </template>
+              <template v-else-if="item.status === 1">即将放号</template>
+              <template v-else-if="item.status === -1">停止挂号</template>
+            </div>
+          </div>
+        </div>
+
+        <el-pagination class="pagination" background layout="prev, pager, next" :current-page="page" :total="total"
+          :page-size="limit" @current-change="getPage">
+        </el-pagination>
+      </el-card>
+
+      <!-- 即将放号倒计时区域 -->
+      <div v-if="!tabShow" class="countdown-card">
+        <el-result icon="warning" title="即将放号">
+          <template #extra>
+            <div class="countdown-info">
+              <p class="release-time">{{ baseMap.releaseTime }} 放号</p>
+              <div class="countdown-timer">{{ timeString }}</div>
+            </div>
+          </template>
+        </el-result>
+      </div>
+
+      <!-- 排班列表区域 -->
+      <template v-if="tabShow">
+        <!-- 上午排班 -->
+        <el-card class="schedule-period">
+          <template #header>
+            <div class="period-header">
+              <div class="period-title">
+                <el-icon>
+                  <Sunrise />
+                </el-icon>
+                <span>上午号源</span>
+              </div>
+              <div class="period-actions">
+                <el-tag type="info">共 {{ morningSchedules.length }} 个号源</el-tag>
+                <el-button v-if="morningSchedules.length > initialDisplayCount" link
+                  @click="morningExpanded = !morningExpanded">
+                  {{ morningExpanded ? '收起' : '展开' }}
+                  <el-icon class="expand-icon" :class="{ 'is-expanded': morningExpanded }">
+                    <ArrowDown />
+                  </el-icon>
+                </el-button>
+              </div>
+            </div>
+          </template>
+
+          <div v-if="loading" class="schedule-cards">
+            <el-skeleton :rows="3" animated />
+          </div>
+
+          <el-empty v-else-if="morningSchedules.length === 0" description="暂无号源" />
+
+          <div v-else class="schedule-cards">
+            <div v-for="item in displayMorningSchedules" :key="item.id" class="schedule-card"
+              :class="{ 'disabled': item.availableNumber === 0 }">
+              <div class="doctor-info">
+                <div class="doctor-header">
+                  <span class="doctor-name">{{ item.docname }}</span>
+                  <el-tag size="small" type="success">{{ item.title }}</el-tag>
+                </div>
+                <div class="doctor-skill">{{ item.skill }}</div>
+              </div>
+              <div class="booking-info">
+                <div class="price">￥{{ item.amount }}</div>
+                <el-button type="primary" :disabled="item.availableNumber === 0"
+                  @click="booking(item.id, item.availableNumber)">
+                  剩余 {{ item.availableNumber }} 号
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </el-card>
+
+        <!-- 下午排班 -->
+        <el-card class="schedule-period">
+          <template #header>
+            <div class="period-header">
+              <div class="period-title">
+                <el-icon>
+                  <Sunset />
+                </el-icon>
+                <span>下午号源</span>
+              </div>
+              <div class="period-actions">
+                <el-tag type="info">共 {{ afternoonSchedules.length }} 个号源</el-tag>
+                <el-button v-if="afternoonSchedules.length > initialDisplayCount" link
+                  @click="afternoonExpanded = !afternoonExpanded">
+                  {{ afternoonExpanded ? '收起' : '展开' }}
+                  <el-icon class="expand-icon" :class="{ 'is-expanded': afternoonExpanded }">
+                    <ArrowDown />
+                  </el-icon>
+                </el-button>
+              </div>
+            </div>
+          </template>
+
+          <!-- 下午排班列表使用相同的逻辑 -->
+          <div v-if="loading" class="schedule-cards">
+            <el-skeleton :rows="3" animated />
+          </div>
+
+          <el-empty v-else-if="afternoonSchedules.length === 0" description="暂无号源" />
+
+          <div v-else class="schedule-cards">
+            <div v-for="item in displayAfternoonSchedules" :key="item.id" class="schedule-card"
+              :class="{ 'disabled': item.availableNumber === 0 }">
+              <div class="doctor-info">
+                <div class="doctor-header">
+                  <span class="doctor-name">{{ item.docname }}</span>
+                  <el-tag size="small" type="success">{{ item.title }}</el-tag>
+                </div>
+                <div class="doctor-skill">{{ item.skill }}</div>
+              </div>
+              <div class="booking-info">
+                <div class="price">￥{{ item.amount }}</div>
+                <el-button type="primary" :disabled="item.availableNumber === 0"
+                  @click="booking(item.id, item.availableNumber)">
+                  剩余 {{ item.availableNumber }} 号
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </el-card>
+      </template>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-/* 可以添加页面的样式定义，或者依赖外部CSS */
+.period-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.expand-icon {
+  transition: transform 0.3s ease;
+}
+
+.expand-icon.is-expanded {
+  transform: rotate(180deg);
+}
+
+.hospital-page {
+  min-height: 100vh;
+  background-color: var(--el-bg-color-page);
+}
+
+.hospital-hero {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  padding: 80px 0 40px 0;
+  color: white;
+}
+
+.hero-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.hospital-basic {
+  text-align: center;
+}
+
+/* 头部信息 加载动画 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+
+.loading-icon {
+  font-size: 32px;
+  color: white;
+  animation: rotate 1s linear infinite;
+}
+
+.loading-text {
+  color: white;
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 医院标题 科室标签*/
+.hospital-title {
+  font-size: 28px;
+  margin: 0 0 16px;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.hospital-title:hover {
+  opacity: 0.8;
+}
+
+.hospital-tags {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* 主要内容区域 */
+.main-content {
+  max-width: 1200px;
+  margin: -30px auto 40px;
+  padding: 0 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 日历卡片样式 */
+.schedule-calendar {
+  background: white;
+  border-radius: 8px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.schedule-info {
+  display: flex;
+  gap: 20px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--el-text-color-secondary);
+}
+
+.schedule-list {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.schedule-item {
+  width: 120px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color);
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.schedule-item:hover:not(.disabled) {
+  border-color: var(--el-color-primary);
+  transform: translateY(-2px);
+}
+
+.schedule-item.active {
+  border-color: var(--el-color-primary);
+  background-color: var(--el-color-primary-light-9);
+}
+
+.date-info {
+  margin-bottom: 12px;
+}
+
+.date {
+  display: block;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.week {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.status-badge.available {
+  background-color: var(--el-color-success-light-9);
+  color: var(--el-color-success);
+}
+
+.status-badge.full {
+  background-color: var(--el-color-warning-light-9);
+  color: var(--el-color-warning);
+}
+
+.status-badge.disabled {
+  background-color: var(--el-color-info-light-9);
+  color: var(--el-text-color-secondary);
+}
+
+.status-badge.upcoming {
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+}
+
+/* 倒计时样式 */
+.countdown-card {
+  text-align: center;
+  padding: 40px 0;
+}
+
+.countdown-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.release-time {
+  font-size: 18px;
+  color: var(--el-text-color-primary);
+  margin: 0;
+}
+
+.countdown-timer {
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--el-color-danger);
+}
+
+/* 排班列表样式 */
+.schedule-period {
+  margin-bottom: 24px;
+}
+
+.period-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.period-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.schedule-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.schedule-card {
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.3s;
+}
+
+.schedule-card:hover:not(.disabled) {
+  border-color: var(--el-color-primary);
+  transform: translateY(-2px);
+}
+
+.schedule-card.disabled {
+  opacity: 0.7;
+  background-color: var(--el-fill-color-lighter);
+}
+
+.doctor-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.doctor-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.doctor-skill {
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.booking-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.price {
+  color: var(--el-color-danger);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* 响应式调整 */
+@media screen and (max-width: 768px) {
+  .hero-content {
+    padding: 0 16px;
+  }
+
+  .main-content {
+    padding: 0 16px;
+  }
+
+  .schedule-list {
+    gap: 8px;
+  }
+
+  .schedule-item {
+    width: calc(33.33% - 6px);
+    padding: 12px;
+  }
+
+  .schedule-cards {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

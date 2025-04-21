@@ -43,3 +43,8 @@ export interface BookingRule {
     content: string
   }>
 }
+
+export interface LinkItem {
+  hosname: string
+  hoscode: string
+}

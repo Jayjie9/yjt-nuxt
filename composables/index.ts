@@ -115,6 +115,15 @@ export const useHospitalApi = () => {
     return useFetchGet(`/api/hosp/hospital/findByHosname/${hosname}`)
   }
 
+  const getByHosnameDollar = (hosname: string) => {
+    return fetchGet(`/api/hosp/hospital/findByHosname/${hosname}`)
+  }
+
+  // 根据关键字获取医院列表
+  const searchByHosname = (keyword: string) => {
+    return fetchGet(`/api/hosp/hospital/searchByHosname/${keyword}`)
+  }
+
   // 根据医院编号，查询医院预约挂号详情信息
   const findHospDetail = (hoscode: string) => {
     return useFetchGet(`/api/hosp/hospital/findHospDetail/${hoscode}`)
@@ -161,6 +170,8 @@ export const useHospitalApi = () => {
     getHospPageList,
     getHospPageListDollar,
     getByHosname,
+    getByHosnameDollar,
+    searchByHosname,
     findHospDetail,
     findHospDetailDollar,
     findDepartment,

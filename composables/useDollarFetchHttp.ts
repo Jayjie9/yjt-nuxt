@@ -62,7 +62,6 @@ function createFetchRequest(method: HttpMethod) {
 
     const baseURL =
       process.env.NODE_ENV === 'production' ? API_BASE_PROD : API_BASE_DEV
-
     const requestUrl = new URL(url, options.customBaseURL || baseURL).toString()
 
     console.log('发送请求:', {

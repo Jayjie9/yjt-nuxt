@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@element-plus/nuxt": "^1.1.1",
+    "@types/babel__core": "^7.20.5",
     "element-plus": "^2.9.6",
     "unplugin-auto-import": "^19.1.1",
     "unplugin-icons": "^22.1.0",

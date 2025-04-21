@@ -2,31 +2,34 @@
 import { Search, OfficeBuilding, Clock, ArrowDown, ArrowRight, Notification, Warning, Location } from '@element-plus/icons-vue'
 import { useApi } from '~/composables'
 import { useRouter } from 'nuxt/app'
-import type { Hospital, HospitalQueryParams } from '~/types'
+import type { Hospital, HospitalQueryParams, LinkItem } from '~/types'
 
 // definePageMeta({
 //   middleware: 'jwt-auth',
 // })
 
-// 获取API
-const { hospital, dictionary } = useApi()
+/* Api & 路由 */
 const router = useRouter()
-
-// 搜索相关
+const { hospital, dictionary } = useApi()
+/* 搜索相关 */
 const searchName = ref('')
-
-// 分页相关
+/* 分页相关 */
 const page = ref(1)
 const limit = ref(10)
 const totalPages = ref(0)
-
-// 筛选相关
+/* 筛选相关 */
 const searchObj = reactive<HospitalQueryParams>({})
 const hostypeActiveIndex = ref(0)
 const provinceActiveIndex = ref(0)
 const isDistrictExpanded = ref(false)
-// 地区列表
-const initialDisplayCount = 8  // 首行显示的地区数量
+const initialDisplayCount = 11  // 首行显示的地区数量
+/* 搜索相关 */
+let links = ref<LinkItem[]>([])
+let timeout: ReturnType<typeof setTimeout>
+/* 数据列表 */
+const hospitalList = ref<Hospital[]>([])
+const hostypeList = ref<any[]>([])
+const districtList = ref<any[]>([])
 
 const displayedDistricts = computed(() => {
   if (isDistrictExpanded.value) {
@@ -39,16 +42,18 @@ const toggleDistrictExpand = () => {
   isDistrictExpanded.value = !isDistrictExpanded.value
 }
 
-// 数据列表
-const hospitalList = ref<Hospital[]>([])
-const hostypeList = ref<any[]>([])
-const districtList = ref<any[]>([])
-
-// 静态数据（实际应从API获取）
+// 静态数据（后端异常时候选）
 const commonDepts = ref([
   '神经内科', '消化内科', '呼吸内科', '内科',
   '神经外科', '妇科', '产科', '儿科'
 ])
+
+const linksData = [
+  { hoscode: '1000_0', hosname: '北京协和医院' },
+  { hoscode: '111111', hosname: '北京大学第一医院' },
+  { hoscode: '111111', hosname: '北京大学第一医院' },
+  { hoscode: '111111', hosname: '北京大学第一医院' },
+]
 
 const platformNotices = ref([
   '关于延长北京大学国际医院放假的通知',
@@ -62,15 +67,14 @@ const stopNotices = ref([
   '中日友好医院中西医结合心内科门诊停诊公告'
 ])
 
-// 修改初始化函数
+/* 初始化数据：SSR */
 const { data: districtData } = await useAsyncData('districts', () =>
   dictionary.findByParentIdDollar('86')
 )
-
 const { data: hostypeData } = await useAsyncData('hostype', () =>
   dictionary.findByDictCodeDollar('Hostype')
 )
-
+/* 初始化数据 */
 const init = () => {
   try {
     // 查询医院等级列表
@@ -79,7 +83,6 @@ const init = () => {
       let names = hostypeData.value.data.data
       hostypeList.value.push(...names)
     }
-
     // 查询地区数据
     districtList.value = [{ id: 0, name: '全部', value: '' }]
     if (districtData.value?.data?.data) {  // 修改这里，增加安全访问
@@ -90,87 +93,86 @@ const init = () => {
     console.error('初始化数据失败', error)
   }
 }
-
-// 获取医院列表
+/* 获取医院列表 */
 const getHospitalList = async () => {
   try {
     const { data: response } = await hospital.getHospPageListDollar(page.value, limit.value, searchObj)
     if (response.data) {
       hospitalList.value = response.data.content
-
       totalPages.value = response.data.totalPages
     }
   } catch (error) {
     console.error('获取医院列表失败', error)
   }
 }
-
-
-// 根据医院等级筛选
+/* 根据医院等级筛选 */
 const hostypeSelect = (hostype: string, index: number) => {
   hospitalList.value = []
   page.value = 1
   hostypeActiveIndex.value = index
   searchObj.hostype = hostype
-  console.log('searchObj.hostype:' + searchObj.hostype)
-  console.log('index:' + index)
+  // console.log('searchObj.hostype:' + searchObj.hostype)
+  // console.log('index:' + index)
   getHospitalList()
 }
-
-// 根据地区筛选
+/* 根据地区筛选 */
 const districtSelect = (districtCode: string, index: number) => {
   hospitalList.value = []
   page.value = 1
   provinceActiveIndex.value = index
   searchObj.provinceCode = districtCode
-  console.log('searchObj.districtCode:' + searchObj.districtCode)
-  console.log('proinceActiveIndex:' + provinceActiveIndex.value)
-
+  // console.log('searchObj.districtCode:' + searchObj.districtCode)
+  // console.log('proinceActiveIndex:' + provinceActiveIndex.value)
   getHospitalList()
 }
-
-// 搜索建议
-const querySearchAsync = (queryString: string, cb: (suggestions: any[]) => void) => {
+/* 搜索建议 */
+const querySearchAsync = (queryString: string, cb: (suggestions: any) => void) => {
   if (!queryString) {
-    cb([])
+    cb(linksData)
     return
   }
-  hospital.getByHosname(queryString).then(({ data }) => {
-    if (data.value) {
-      const suggestions = data.value.map((item: any) => ({
-        ...item,
-        value: item.hosname
-      }))
-      cb(suggestions)
-    } else {
+  clearTimeout(timeout)
+  timeout = setTimeout(async () => {
+    try {
+      const { data } = await hospital.searchByHosname(queryString)
+      let results;
+      if (data.data && Array.isArray(data.data)) {
+        links.value = data.data
+        results = links.value.filter(createFilter(queryString))
+      } else {
+        console.warn('搜索返回的数据结构不符合预期:', data)
+        results = linksData
+      }
+      // 过滤结果并返回
+      cb(results)
+    } catch (error) {
+      console.error('搜索医院失败:', error)
       cb([])
     }
-  }).catch((error) => {
-    console.error('搜索失败', error)
-    cb([])
-  })
+  }, 800)
 }
-
+const createFilter = (queryString: string) => {
+  return (restaurant: LinkItem) => {
+    return (
+      restaurant.hosname.toLowerCase().indexOf(queryString.toLowerCase()) === 0
+    )
+  }
+}
 // 选择搜索结果
-const handleSelect = (item: any) => {
+const handleSelect = (item: Record<string, any>) => {
   navigateToHospital(item.hoscode)
 }
-
 // 跳转到医院详情
 const navigateToHospital = (hoscode: string) => {
   router.push(`/hospital/${hoscode}`)
 }
 
-// serverapi 测试
-const testa = async () => {
-  await $fetch('/api/test/test')
-}
-
-// 初始化数据
+/* 全局初始化 */
 init()
-await getHospitalList()
-onMounted(() => { })
-
+// await getHospitalList()
+onMounted(() => {
+  getHospitalList()
+})
 </script>
 
 <template>
@@ -184,7 +186,7 @@ onMounted(() => { })
         <!-- 搜索区域 -->
         <div class="search-container">
           <el-autocomplete class="search-input" v-model="searchName" :fetch-suggestions="querySearchAsync"
-            placeholder="搜索医院名称、科室或疾病" @select="handleSelect" :trigger-on-focus="false" highlight-first-item>
+            placeholder="搜索医院名称、科室或疾病" @select="handleSelect" :trigger-on-focus="true" highlight-first-item>
             <template #prefix>
               <el-icon>
                 <Search />

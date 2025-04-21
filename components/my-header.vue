@@ -95,7 +95,7 @@ async function goToLogin() {
 
 // 病情分析
 async function goToAnalysisIllness() {
-  navigateTo('/hospital/list')
+  navigateTo('/disease')
 }
 
 // 预约挂号

@@ -6,6 +6,9 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@element-plus/nuxt', '@pinia/nuxt'],
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
+  },
 })
 
 export default {

@@ -1,9 +1,10 @@
 <script setup>
 import { useRoute, useRouter } from 'nuxt/app'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, Document, Phone } from '@element-plus/icons-vue'
+import { User, Document, Phone, ArrowLeft, Calendar, Location } from '@element-plus/icons-vue'
 import { useApi } from '~/composables'
 
+/* API & 路由 */
 const api = useApi()
 const patientApi = api.patient
 const dictApi = api.dictionary
@@ -81,7 +82,7 @@ const patientRef = ref(null)
 const selectedShow = ref(null)
 const loading = ref(false)
 
-// 表单验证规则
+/* 表单验证规则 */
 const validateRules = {
     name: [
         { required: true, message: '请输入姓名', trigger: 'blur' },
@@ -104,7 +105,7 @@ const validateRules = {
     ]
 }
 
-// 级联选择器配置
+/* 级联选择器配置 */
 const props = {
     lazy: true,
     lazyLoad: async (node, resolve) => {
@@ -125,7 +126,11 @@ const props = {
     }
 }
 
-// 获取就诊人详情
+/* ============================================== */
+/* 方法 */
+/* ============================================== */
+
+/* 获取就诊人详情 */
 const fetchDataById = async (id) => {
     try {
         loading.value = true
@@ -162,7 +167,7 @@ const fetchDataById = async (id) => {
     }
 }
 
-// 获取证件类型字典
+/* 获取证件类型字典 */
 const getDict = async () => {
     try {
         const { data: response } = await dictApi.findByDictCode("CertificatesType")
@@ -172,7 +177,7 @@ const getDict = async () => {
     }
 }
 
-// 保存或更新
+/* 保存或更新 */
 const saveOrUpdate = () => {
     patientRef.value?.validate(async valid => {
         if (valid) {
@@ -184,7 +189,7 @@ const saveOrUpdate = () => {
     })
 }
 
-// 保存数据
+/* 保存数据 */
 const saveData = async () => {
     if (submitBnt.value === '正在提交...') return ElMessage.info('请勿重复提交')
 
@@ -200,7 +205,7 @@ const saveData = async () => {
     }
 }
 
-// 更新数据
+/* 更新数据 */
 const updateData = async () => {
     if (submitBnt.value === '正在提交...') return ElMessage.info('请勿重复提交')
 
@@ -216,7 +221,18 @@ const updateData = async () => {
     }
 }
 
-// 初始化
+/* 返回列表 */
+const goBack = () => {
+    if (route.query.id) {
+        return navigateTo({
+            path: '/patient/show',
+            query: { id: route.query.id }
+        })
+    }
+    return navigateTo('/patient')
+}
+
+/* 初始化 */
 const init = async () => {
     try {
         loading.value = true
@@ -235,106 +251,167 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="hospital-page">
-        <div class="page-layout">
-            <NavPatientNav />
-            <div class="page-container">
-                <el-card class="patient-form" v-loading="loading">
-                    <template #header>
-                        <div class="card-header">
-                            <h2 class="title">{{ route.query.id ? '编辑' : '添加' }}就诊人</h2>
-                        </div>
-                    </template>
+    <div class="patient-add-page">
+        <!-- 页面头部 -->
+        <div class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">{{ route.query.id ? '编辑' : '添加' }}就诊人</h1>
+                <p class="page-subtitle">{{ route.query.id ? '修改就诊人信息' : '添加新的就诊人，用于预约挂号和医疗服务' }}</p>
+            </div>
+        </div>
 
-                    <el-form :model="patient" :rules="validateRules" ref="patientRef" label-width="120px"
+        <!-- 主要内容区域 -->
+        <div class="main-content">
+            <div class="content-container">
+                <!-- 返回按钮 -->
+                <div class="back-button-container">
+                    <el-button class="back-button" @click="goBack">
+                        <el-icon>
+                            <ArrowLeft />
+                        </el-icon>
+                        返回就诊人列表
+                    </el-button>
+                </div>
+
+                <!-- 表单卡片 -->
+                <el-card class="form-card" shadow="hover" v-loading="loading">
+                    <div class="form-header">
+                        <div class="form-progress">
+                            <div class="progress-step active">
+                                <div class="step-icon">
+                                    <el-icon>
+                                        <User />
+                                    </el-icon>
+                                </div>
+                                <div class="step-label">基本信息</div>
+                            </div>
+                            <div class="progress-line"></div>
+                            <div class="progress-step active">
+                                <div class="step-icon">
+                                    <el-icon>
+                                        <Location />
+                                    </el-icon>
+                                </div>
+                                <div class="step-label">建档信息</div>
+                            </div>
+                            <div class="progress-line"></div>
+                            <div class="progress-step">
+                                <div class="step-icon">
+                                    <el-icon>
+                                        <Phone />
+                                    </el-icon>
+                                </div>
+                                <div class="step-label">联系人信息</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <el-form :model="patient" :rules="validateRules" ref="patientRef" label-width="100px"
                         class="patient-form" :disabled="loading">
                         <!-- 就诊人信息 -->
                         <div class="form-section">
-                            <div class="section-title">
-                                <el-icon>
-                                    <User />
-                                </el-icon>
-                                就诊人信息
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <span class="title-icon"></span>
+                                    <span>就诊人信息</span>
+                                </div>
+                                <div class="section-desc">请填写真实信息，用于医院就诊</div>
                             </div>
-                            <el-row :gutter="20">
-                                <el-col :span="12">
-                                    <el-form-item prop="name" label="姓名">
+
+                            <div class="form-grid">
+                                <el-form-item prop="name" label="姓名">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <User />
+                                        </el-icon>
                                         <el-input v-model="patient.name" placeholder="请输入真实姓名全称" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item prop="certificatesType" label="证件类型">
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item prop="sex" label="性别">
+                                    <el-radio-group v-model="patient.sex">
+                                        <el-radio :label="1">男</el-radio>
+                                        <el-radio :label="0">女</el-radio>
+                                    </el-radio-group>
+                                </el-form-item>
+
+                                <el-form-item prop="birthdate" label="出生日期">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <Calendar />
+                                        </el-icon>
+                                        <el-date-picker v-model="patient.birthdate" type="date" placeholder="选择日期"
+                                            class="w-full" />
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item prop="phone" label="手机号码">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <Phone />
+                                        </el-icon>
+                                        <el-input v-model="patient.phone" placeholder="请输入手机号码" maxlength="11" />
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item prop="certificatesType" label="证件类型">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <User />
+                                        </el-icon>
                                         <el-select v-model="patient.certificatesType" placeholder="请选择证件类型"
                                             class="w-full">
                                             <el-option v-for="item in certificatesTypeList" :key="item.value"
                                                 :label="item.name" :value="item.value" />
                                         </el-select>
-                                    </el-form-item>
-                                </el-col>
-                            </el-row>
+                                    </div>
+                                </el-form-item>
 
-                            <el-row :gutter="20">
-                                <el-col :span="12">
-                                    <el-form-item prop="certificatesNo" label="证件号码">
+                                <el-form-item prop="certificatesNo" label="证件号码">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <Document />
+                                        </el-icon>
                                         <el-input v-model="patient.certificatesNo" placeholder="请输入证件号码" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item prop="sex" label="性别">
-                                        <el-radio-group v-model="patient.sex">
-                                            <el-radio :label="1">男</el-radio>
-                                            <el-radio :label="0">女</el-radio>
-                                        </el-radio-group>
-                                    </el-form-item>
-                                </el-col>
-                            </el-row>
-
-                            <el-row :gutter="20">
-                                <el-col :span="12">
-                                    <el-form-item prop="birthdate" label="出生日期">
-                                        <el-date-picker v-model="patient.birthdate" type="date" placeholder="选择日期"
-                                            class="w-full" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item prop="phone" label="手机号码">
-                                        <el-input v-model="patient.phone" placeholder="请输入手机号码" maxlength="11" />
-                                    </el-form-item>
-                                </el-col>
-                            </el-row>
+                                    </div>
+                                </el-form-item>
+                            </div>
                         </div>
 
                         <!-- 建档信息 -->
                         <div class="form-section">
-                            <div class="section-title">
-                                <el-icon>
-                                    <Document />
-                                </el-icon>
-                                建档信息
-                                <span class="section-subtitle">（完善后部分医院首次就诊不排队建档）</span>
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <span class="title-icon"></span>
+                                    <span>建档信息</span>
+                                </div>
+                                <div class="section-desc">完善后部分医院首次就诊不排队建档</div>
                             </div>
-                            <el-row :gutter="20">
-                                <el-col :span="12">
-                                    <el-form-item prop="isMarry" label="婚姻状况">
-                                        <el-radio-group v-model="patient.isMarry">
-                                            <el-radio :label="0">未婚</el-radio>
-                                            <el-radio :label="1">已婚</el-radio>
-                                        </el-radio-group>
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item prop="isInsure" label="医保类型">
-                                        <el-radio-group v-model="patient.isInsure">
-                                            <el-radio :label="0">自费</el-radio>
-                                            <el-radio :label="1">医保</el-radio>
-                                        </el-radio-group>
-                                    </el-form-item>
-                                </el-col>
-                            </el-row>
+
+                            <div class="form-grid">
+                                <el-form-item prop="isMarry" label="婚姻状况">
+                                    <el-radio-group v-model="patient.isMarry">
+                                        <el-radio :label="0">未婚</el-radio>
+                                        <el-radio :label="1">已婚</el-radio>
+                                    </el-radio-group>
+                                </el-form-item>
+
+                                <el-form-item prop="isInsure" label="医保类型">
+                                    <el-radio-group v-model="patient.isInsure">
+                                        <el-radio :label="0">自费</el-radio>
+                                        <el-radio :label="1">医保</el-radio>
+                                    </el-radio-group>
+                                </el-form-item>
+                            </div>
 
                             <el-form-item prop="addressSelected" label="当前住址">
-                                <el-cascader ref="selectedShow" v-model="patient.addressSelected" :props="props"
-                                    class="w-full" placeholder="请选择省/市/区" />
+                                <div class="input-with-icon">
+                                    <el-icon class="field-icon">
+                                        <Location />
+                                    </el-icon>
+                                    <el-cascader ref="selectedShow" v-model="patient.addressSelected" :props="props"
+                                        class="w-full" placeholder="请选择省/市/区" />
+                                </div>
                             </el-form-item>
 
                             <el-form-item prop="address" label="详细地址">
@@ -344,52 +421,65 @@ onMounted(() => {
 
                         <!-- 联系人信息 -->
                         <div class="form-section">
-                            <div class="section-title">
-                                <el-icon>
-                                    <Phone />
-                                </el-icon>
-                                联系人信息
-                                <span class="section-subtitle">（选填）</span>
+                            <div class="section-header">
+                                <div class="section-title">
+                                    <span class="title-icon"></span>
+                                    <span>联系人信息</span>
+                                </div>
+                                <div class="section-desc">选填，用于紧急情况联系</div>
                             </div>
-                            <el-row :gutter="20">
-                                <el-col :span="12">
-                                    <el-form-item label="联系人姓名">
+
+                            <div class="form-grid">
+                                <el-form-item label="联系人姓名">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <User />
+                                        </el-icon>
                                         <el-input v-model="patient.contactsName" placeholder="请输入联系人姓名" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item label="证件类型">
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="联系人手机">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <Phone />
+                                        </el-icon>
+                                        <el-input v-model="patient.contactsPhone" placeholder="请输入联系人手机号码"
+                                            maxlength="11" />
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="证件类型">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <User />
+                                        </el-icon>
                                         <el-select v-model="patient.contactsCertificatesType" placeholder="请选择证件类型"
                                             class="w-full">
                                             <el-option v-for="item in certificatesTypeList" :key="item.value"
                                                 :label="item.name" :value="item.value" />
                                         </el-select>
-                                    </el-form-item>
-                                </el-col>
-                            </el-row>
+                                    </div>
+                                </el-form-item>
 
-                            <el-row :gutter="20">
-                                <el-col :span="12">
-                                    <el-form-item label="证件号码">
+                                <el-form-item label="证件号码">
+                                    <div class="input-with-icon">
+                                        <el-icon class="field-icon">
+                                            <Document />
+                                        </el-icon>
                                         <el-input v-model="patient.contactsCertificatesNo" placeholder="请输入联系人证件号码" />
-                                    </el-form-item>
-                                </el-col>
-                                <el-col :span="12">
-                                    <el-form-item label="手机号码">
-                                        <el-input v-model="patient.contactsPhone" placeholder="请输入联系人手机号码"
-                                            maxlength="11" />
-                                    </el-form-item>
-                                </el-col>
-                            </el-row>
+                                    </div>
+                                </el-form-item>
+                            </div>
                         </div>
 
                         <!-- 提交按钮 -->
                         <div class="form-footer">
                             <el-button type="primary" @click="saveOrUpdate" :loading="submitBnt === '正在提交...'"
-                                size="large">
+                                size="large" class="submit-btn">
                                 {{ submitBnt }}
                             </el-button>
-                            <el-button @click="router.push('/patient')" size="large">取消</el-button>
+                            <el-button @click="goBack" size="large" class="cancel-btn">取消</el-button>
                         </div>
                     </el-form>
                 </el-card>
@@ -399,73 +489,206 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.hospital-page {
-    background-color: #f5f7fa;
+/* 页面基础样式 */
+.patient-add-page {
     min-height: 100vh;
+    background-color: var(--el-bg-color-page, #f5f7fa);
 }
 
-.page-layout {
+/* 页面头部 */
+.page-header {
+    background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+    padding: 60px 0 40px 0;
+    color: white;
+    text-align: center;
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.page-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.page-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+/* 主内容区域 */
+.main-content {
+    max-width: 900px;
+    margin: -20px auto 40px;
+    padding: 0 20px;
+    position: relative;
+}
+
+.content-container {
+    position: relative;
+}
+
+/* 返回按钮 */
+.back-button-container {
+    margin-bottom: 16px;
+}
+
+.back-button {
     display: flex;
-    gap: 20px;
-    padding: 20px;
+    align-items: center;
+    gap: 5px;
 }
 
-.page-container {
-    flex: 1;
+/* 表单卡片 */
+.form-card {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s;
+    box-shadow: var(--el-box-shadow-light);
+    margin-bottom: 30px;
 }
 
-.patient-form {
-    background: #fff;
+/* 表单头部进度条 */
+.form-header {
+    margin-bottom: 30px;
+}
+
+.form-progress {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    background-color: #f8f9fa;
     border-radius: 8px;
 }
 
-.card-header {
-    padding: 0;
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
 }
 
-.title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #333;
+.step-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    color: #909399;
+    font-size: 20px;
+    transition: all 0.3s;
 }
 
+.progress-step.active .step-icon {
+    background-color: var(--el-color-primary);
+    color: white;
+}
+
+.step-label {
+    font-size: 14px;
+    color: #606266;
+    font-weight: 500;
+}
+
+.progress-step.active .step-label {
+    color: var(--el-color-primary);
+}
+
+.progress-line {
+    flex: 1;
+    height: 2px;
+    background-color: #f0f0f0;
+    position: relative;
+    z-index: 0;
+}
+
+/* 表单区域 */
 .form-section {
     margin-bottom: 30px;
-    padding: 20px;
+    padding: 24px;
     background: #f8f9fa;
     border-radius: 8px;
+}
+
+.section-header {
+    margin-bottom: 20px;
 }
 
 .section-title {
     display: flex;
     align-items: center;
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-}
-
-.section-title .el-icon {
-    margin-right: 8px;
     font-size: 18px;
-    color: #409eff;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+    margin-bottom: 4px;
 }
 
-.section-subtitle {
-    margin-left: 8px;
-    font-size: 12px;
+.title-icon {
+    width: 4px;
+    height: 18px;
+    background-color: var(--el-color-primary);
+    margin-right: 8px;
+    border-radius: 2px;
+}
+
+.section-desc {
+    font-size: 14px;
+    color: var(--el-text-color-secondary);
+    margin-left: 12px;
+}
+
+/* 表单网格布局 */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+/* 输入框带图标 */
+.input-with-icon {
+    position: relative;
+}
+
+.field-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
     color: #909399;
-    font-weight: normal;
+    z-index: 1;
 }
 
+.input-with-icon :deep(.el-input__wrapper),
+.input-with-icon :deep(.el-select),
+.input-with-icon :deep(.el-cascader) {
+    padding-left: 35px;
+}
+
+/* 表单底部 */
 .form-footer {
-    margin-top: 30px;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 40px;
 }
 
+.submit-btn,
+.cancel-btn {
+    min-width: 120px;
+    padding: 12px 20px;
+    font-size: 16px;
+}
+
+/* 通用样式 */
 .w-full {
     width: 100%;
 }
@@ -488,5 +711,47 @@ onMounted(() => {
 
 :deep(.el-form-item.is-error .el-input__wrapper) {
     box-shadow: 0 0 0 1px var(--el-color-danger) inset;
+}
+
+/* 响应式布局 */
+@media screen and (max-width: 768px) {
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .page-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .main-content {
+        padding: 0 15px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-progress {
+        padding: 15px;
+    }
+
+    .step-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+
+    .step-label {
+        font-size: 12px;
+    }
+
+    .form-footer {
+        flex-direction: column;
+    }
+
+    .submit-btn,
+    .cancel-btn {
+        width: 100%;
+    }
 }
 </style>

@@ -17,6 +17,9 @@ useHead({
   </NuxtLayout>
 </template>
 
-<style scoped>
-
+<style>
+html {
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
 </style>

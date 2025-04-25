@@ -50,14 +50,15 @@ const commonDepts = ref([
 
 const linksData = [
   { hoscode: '1000_0', hosname: '北京协和医院' },
-  { hoscode: '111111', hosname: '北京大学第一医院' },
-  { hoscode: '111111', hosname: '北京大学第一医院' },
-  { hoscode: '111111', hosname: '北京大学第一医院' },
+  { hoscode: '1000_1', hosname: '上海瑞金医院' },
+  { hoscode: '1000_2', hosname: '广州中山大学附属第一医院' },
+  { hoscode: '4200_0', hosname: '华中科技大学同济医学院附属同济医院' },
 ]
 
 const platformNotices = ref([
   '关于延长北京大学国际医院放假的通知',
-  '北京中医药大学东方医院部分科室医生门诊医',
+  '北京中医药大学东方医院部分科室医生门诊',
+  '武警总医院号源暂停更新通知',
   '武警总医院号源暂停更新通知'
 ])
 
@@ -167,39 +168,73 @@ const navigateToHospital = (hoscode: string) => {
   router.push(`/hospital/${hoscode}`)
 }
 
+
+// 系统公告数据
+const systemAnnouncements = ref([
+  {
+    id: '1',
+    title: '系统维护通知',
+    date: new Date('2025-04-22T10:00:00'),
+    content: `<p>尊敬的用户：</p>
+    <p>为了提供更优质的服务，我们的系统将于2025年4月25日凌晨2:00-4:00进行例行维护升级。维护期间，网站及APP将暂停服务，给您带来的不便敬请谅解。</p>
+    <p>此次更新包括：</p>
+    <ul>
+      <li>预约流程优化，提升用户体验</li>
+      <li>新增专家在线问诊功能</li>
+      <li>修复已知问题，提升系统稳定性</li>
+    </ul>
+    <p>如有疑问，请联系客服热线：400-123-4567</p>`,
+    attachments: [
+      { name: '系统更新详情.pdf', url: '#' },
+      { name: '新功能使用指南.pdf', url: '#' }
+    ]
+  },
+  {
+    id: '2',
+    title: '春节门诊安排',
+    date: new Date('2025-04-21T14:30:00'),
+    content: `<p>尊敬的用户：</p>
+    <p>春节期间（2025年2月1日至2月7日），我院门诊安排如下：</p>
+    <ul>
+      <li>急诊科：24小时正常接诊</li>
+      <li>内科、外科：每日上午8:00-12:00开诊</li>
+      <li>专科门诊：暂停服务，2月8日恢复正常</li>
+    </ul>
+    <p>请广大患者合理安排就诊时间。祝大家新春快乐，身体健康！</p>`,
+    attachments: []
+  }
+]);
+const announcementModal = ref(null);
+
 /* 全局初始化 */
 init()
-// await getHospitalList()
 onMounted(() => {
   getHospitalList()
 })
 </script>
 
 <template>
-  <div class="home-page">
-    <!-- Hero Section -->
-    <div class="hero-section">
-      <div class="hero-content">
-        <h1 class="hero-title">在线医疗预约平台</h1>
-        <p class="hero-subtitle">便捷挂号，智慧就医，为您的健康保驾护航</p>
+  <div class="page-common">
+    <!-- 系统公告弹窗 -->
+    <SystemAnnouncement ref="announcementModal" :announcements="systemAnnouncements" />
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="header-title">在线医疗预约平台</h1>
+        <p class="header-subtitle">便捷挂号，智慧就医，为您的健康保驾护航</p>
 
         <!-- 搜索区域 -->
         <div class="search-container">
-          <el-autocomplete class="search-input" v-model="searchName" :fetch-suggestions="querySearchAsync"
-            placeholder="搜索医院名称、科室或疾病" @select="handleSelect" :trigger-on-focus="true" highlight-first-item>
+          <el-autocomplete class="home-search-input" v-model="searchName" :fetch-suggestions="querySearchAsync"
+            placeholder="搜索医院名称或科室" @select="handleSelect" :trigger-on-focus="true" highlight-first-item
+            fit-input-width>
             <template #prefix>
               <el-icon>
                 <Search />
               </el-icon>
             </template>
             <template #default="{ item }">
-              <div class="search-suggestion-item">
-                <div class="suggestion-main">
-                  <span class="suggestion-name">{{ item.hosname }}</span>
-                  <span class="suggestion-level">{{ item.param?.hostypeString }}</span>
-                </div>
-                <span class="suggestion-address">{{ item.param?.fullAddress }}</span>
-              </div>
+              <span class="suggestion-name">{{ item.hosname }}</span>
             </template>
           </el-autocomplete>
         </div>
@@ -298,7 +333,7 @@ onMounted(() => {
         <!-- 公告面板 -->
         <div class="notice-panel">
           <div class="panel-header">
-            <div class="header-title">
+            <div class="notice-title">
               <el-icon>
                 <Notification />
               </el-icon>
@@ -318,7 +353,7 @@ onMounted(() => {
         <!-- 停诊信息 -->
         <div class="notice-panel warning-panel">
           <div class="panel-header">
-            <div class="header-title">
+            <div class="notice-title">
               <el-icon>
                 <Warning />
               </el-icon>
@@ -340,75 +375,11 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.home-page {
-  min-height: 100vh;
-  background-color: var(--el-bg-color-page);
-}
+@import '@/assets/css/common.css';
 
-/* Hero Section */
-.hero-section {
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-  padding: 60px 20px;
-  color: white;
-}
-
-.hero-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.hero-title {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
-}
-
-.hero-subtitle {
-  font-size: 1.2rem;
-  opacity: 0.9;
-  margin-bottom: 2rem;
-}
-
-/* 搜索区域 */
-.search-container {
-  max-width: 600px;
-  margin: 0 auto 2rem;
-}
-
-.search-input {
-  width: 100%;
-}
-
-.search-input :deep(.el-input__inner) {
-  height: 50px;
-  font-size: 16px;
-  border-radius: 25px;
-}
-
-.search-suggestion-item {
-  padding: 8px 0;
-}
-
-.suggestion-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
+/* 搜索候选 */
 .suggestion-name {
   font-weight: 500;
-}
-
-.suggestion-level {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-
-.suggestion-address {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
 }
 
 /* 快速入口 */
@@ -421,34 +392,31 @@ onMounted(() => {
 
 .quick-access-item {
   padding: 8px 20px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .quick-access-item:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* 主内容区域 */
 .main-content {
-  max-width: 1200px;
-  margin: -30px auto 0;
-  padding: 0 20px 30px 20px;
   display: grid;
+  margin: -40px auto 0;
   grid-template-columns: 1fr 300px;
   gap: 20px;
-  position: relative;
 }
 
 /* 筛选面板 */
 .filter-panel {
-  background: white;
+  background: #ffffff;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: var(--el-box-shadow-light);
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .filter-group {
@@ -462,7 +430,7 @@ onMounted(() => {
 .filter-label {
   font-weight: 500;
   margin-bottom: 12px;
-  color: var(--el-text-color-primary);
+  color: #303133;
 }
 
 .filter-options {
@@ -513,7 +481,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--el-bg-color-page);
+  background: #f5f7fa;
 }
 
 .hospital-logo img {
@@ -524,7 +492,7 @@ onMounted(() => {
 
 .hospital-logo .el-icon {
   font-size: 24px;
-  color: var(--el-text-color-secondary);
+  color: #909399;
 }
 
 .hospital-info {
@@ -535,7 +503,7 @@ onMounted(() => {
   margin: 0 0 8px;
   font-size: 16px;
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: #303133;
 }
 
 .hospital-tags {
@@ -557,18 +525,18 @@ onMounted(() => {
 }
 
 .hospital-intro {
-  color: var(--el-text-color-secondary);
+  color: #909399;
   font-size: 13px;
   line-height: 1.5;
 }
 
 /* 右侧面板 */
 .notice-panel {
-  background: white;
+  background: #ffffff;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: var(--el-box-shadow-light);
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .panel-header {
@@ -578,12 +546,12 @@ onMounted(() => {
   margin-bottom: 15px;
 }
 
-.header-title {
+.notice-title {
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 500;
-  color: var(--el-text-color-primary);
+  color: #303133;
 }
 
 .notice-list {
@@ -597,7 +565,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 4px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid #ebeef5;
 }
 
 .notice-item:last-child {
@@ -606,13 +574,13 @@ onMounted(() => {
 }
 
 .notice-text {
-  color: var(--el-text-color-primary);
+  color: #303133;
   font-size: 14px;
   line-height: 1.5;
 }
 
 .notice-time {
-  color: var(--el-text-color-secondary);
+  color: #909399;
   font-size: 12px;
 }
 

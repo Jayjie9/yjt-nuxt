@@ -1,0 +1,39 @@
+/* 浅色主题变量 */
+:root[data-theme='light'] {
+  /* 主色调 */
+  --primary-color: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  --primary-color-hover: #40a9ff;
+  --primary-color-pressed: #096dd9;
+
+  /* 文字颜色 */
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --text-disabled: #95a5a6;
+
+  /* 标题颜色 */
+  --title-color: rgb(255, 255, 255);
+
+  /* 背景颜色 */
+
+  /* 背景颜色 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f0f5f9;
+  --bg-page: var(--el-bg-color-page);
+  --bg-overlay: rgba(255, 255, 255, 0.1);
+  --bg-overlay-hover: rgba(255, 255, 255, 0.2);
+
+  /* 边框颜色 */
+  --border-color: #e6eef5;
+  --border-color-hover: #4a9cd8;
+  --border-color-lighter: var(--el-border-color-lighter);
+
+  /* 功能色 */
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+
+  /* 阴影 */
+  --box-shadow-light: var(--el-box-shadow-light);
+}

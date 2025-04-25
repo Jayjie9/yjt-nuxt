@@ -40,37 +40,31 @@ const guideList = ref([
     {
         id: 1,
         title: '新用户注册',
-        icon: 'User',
         description: '了解如何快速注册账号并完成实名认证'
     },
     {
         id: 2,
         title: '预约挂号',
-        icon: 'Calendar',
         description: '学习如何在平台上预约全国知名医院的专家号'
     },
     {
         id: 3,
         title: '就诊人管理',
-        icon: 'UserFilled',
         description: '管理家人的就诊信息，为家人预约挂号'
     },
     {
         id: 4,
         title: '查询医院',
-        icon: 'House',
         description: '如何查找医院信息和科室排班'
     },
     {
         id: 5,
         title: '查看报告',
-        icon: 'Document',
         description: '在线查看和管理检查报告'
     },
     {
         id: 6,
         title: '账号安全',
-        icon: 'Lock',
         description: '保护您的账号安全和个人隐私'
     }
 ])
@@ -136,12 +130,12 @@ const submitMessage = () => {
 </script>
 
 <template>
-    <div class="help-page">
+    <div class="page-common">
         <!-- 页面头部 -->
         <div class="page-header">
             <div class="header-content">
-                <h1 class="page-title">帮助中心</h1>
-                <p class="page-subtitle">我们随时为您提供帮助和支持</p>
+                <h1 class="header-title">帮助中心</h1>
+                <p class="header-subtitle">我们随时为您提供帮助和支持</p>
 
                 <!-- 搜索框 -->
                 <div class="search-container">
@@ -153,7 +147,7 @@ const submitMessage = () => {
                             </el-icon>
                         </template>
                         <template #append>
-                            <el-button @click="handleSearch" :loading="isSearching">
+                            <el-button @click="handleSearch">
                                 搜索
                             </el-button>
                         </template>
@@ -262,7 +256,7 @@ const submitMessage = () => {
                         <div v-for="guide in guideList" :key="guide.id" class="guide-item">
                             <div class="guide-icon">
                                 <el-icon>
-                                    <component :is="guide.icon" />
+                                    <Document />
                                 </el-icon>
                             </div>
                             <div class="guide-content">
@@ -350,514 +344,12 @@ const submitMessage = () => {
                     </div>
                 </el-card>
             </div>
-
-            <!-- 快速链接 -->
-            <div class="quick-links">
-                <el-card class="links-card" shadow="hover">
-                    <div class="links-grid">
-                        <div class="link-item" @click="$router.push('/')">
-                            <el-icon>
-                                <House />
-                            </el-icon>
-                            <span>返回首页</span>
-                        </div>
-                        <div class="link-item" @click="$router.push('/user')">
-                            <el-icon>
-                                <User />
-                            </el-icon>
-                            <span>个人中心</span>
-                        </div>
-                        <div class="link-item" @click="$router.push('/patient')">
-                            <el-icon>
-                                <UserFilled />
-                            </el-icon>
-                            <span>就诊人管理</span>
-                        </div>
-                        <div class="link-item">
-                            <el-icon>
-                                <Setting />
-                            </el-icon>
-                            <span>系统设置</span>
-                        </div>
-                    </div>
-                </el-card>
-            </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-/* 页面基础样式 */
-.help-page {
-    min-height: 100vh;
-    background-color: #f0f5f9;
-}
-
-/* 页面头部 */
-.page-header {
-    background: linear-gradient(135deg, #4a9cd8 0%, #1a6ca8 100%);
-    padding: 60px 0 80px 0;
-    color: white;
-    text-align: center;
-}
-
-.header-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-.page-title {
-    font-size: 2.2rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.page-subtitle {
-    font-size: 1.1rem;
-    opacity: 0.9;
-    margin-bottom: 2rem;
-}
-
-/* 搜索框 */
-.search-container {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.search-input {
-    --el-input-height: 50px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.search-input :deep(.el-input__wrapper) {
-    padding-left: 15px;
-}
-
-.search-icon {
-    font-size: 18px;
-    color: #95a5a6;
-}
-
-/* 主内容区域 */
-.main-content {
-    max-width: 1000px;
-    margin: -40px auto 40px;
-    padding: 0 20px;
-    position: relative;
-}
-
-/* 搜索结果 */
-.search-results-container {
-    margin-bottom: 20px;
-}
-
-.search-results-card {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-}
-
-.card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.results-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.search-results-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.search-result-item {
-    padding: 15px;
-    border-radius: 8px;
-    background-color: #f8fafc;
-    border-left: 3px solid #4a9cd8;
-}
-
-.result-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 8px;
-}
-
-.result-title .el-icon {
-    color: #4a9cd8;
-}
-
-.result-content {
-    color: #7f8c8d;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
-.no-results {
-    padding: 30px 0;
-    text-align: center;
-}
-
-/* 分类导航 */
-.category-tabs {
-    display: flex;
-    background-color: white;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-}
-
-.category-tab {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px 0;
-    cursor: pointer;
-    transition: all 0.3s;
-    gap: 8px;
-    color: #7f8c8d;
-    position: relative;
-}
-
-.category-tab.active {
-    color: #4a9cd8;
-    background-color: #f0f7ff;
-}
-
-.category-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 25%;
-    width: 50%;
-    height: 3px;
-    background-color: #4a9cd8;
-    border-radius: 3px 3px 0 0;
-}
-
-.category-tab .el-icon {
-    font-size: 24px;
-}
-
-/* 常见问题 */
-.faq-card {
-    border-radius: 12px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-}
-
-.section-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.section-title .el-icon {
-    font-size: 20px;
-    color: #4a9cd8;
-}
-
-.section-title h2 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.faq-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.faq-item {
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #e6eef5;
-    transition: all 0.3s;
-}
-
-.faq-item:hover {
-    border-color: #4a9cd8;
-}
-
-.faq-question {
-    padding: 16px;
-    background-color: #f8fafc;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.question-text {
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.expand-icon {
-    transition: transform 0.3s;
-    color: #95a5a6;
-}
-
-.faq-item.expanded .expand-icon {
-    transform: rotate(90deg);
-    color: #4a9cd8;
-}
-
-.faq-answer {
-    padding: 0 16px;
-    max-height: 0;
-    overflow: hidden;
-    transition: all 0.3s;
-    background-color: white;
-}
-
-.faq-item.expanded .faq-answer {
-    padding: 16px;
-    max-height: 500px;
-}
-
-.faq-answer p {
-    margin: 0;
-    color: #7f8c8d;
-    line-height: 1.6;
-}
-
-/* 使用指南 */
-.guide-card {
-    border-radius: 12px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-}
-
-.guide-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-}
-
-.guide-item {
-    display: flex;
-    gap: 15px;
-    padding: 20px;
-    border-radius: 8px;
-    background-color: #f8fafc;
-    transition: all 0.3s;
-    border: 1px solid #e6eef5;
-}
-
-.guide-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-    border-color: #4a9cd8;
-}
-
-.guide-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: #e1f0ff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.guide-icon .el-icon {
-    font-size: 24px;
-    color: #4a9cd8;
-}
-
-.guide-content {
-    flex: 1;
-}
-
-.guide-title {
-    margin: 0 0 8px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.guide-description {
-    margin: 0 0 12px;
-    font-size: 14px;
-    color: #7f8c8d;
-    line-height: 1.5;
-}
-
-.guide-link {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #4a9cd8;
-    font-size: 14px;
-    padding: 0;
-}
-
-.link-icon {
-    transition: transform 0.3s;
-}
-
-.guide-link:hover .link-icon {
-    transform: translateX(3px);
-}
-
-/* 联系我们 */
-.contact-card {
-    border-radius: 12px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-}
-
-.contact-content {
-    display: flex;
-    gap: 30px;
-}
-
-.contact-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.contact-item {
-    display: flex;
-    gap: 15px;
-    padding: 20px;
-    border-radius: 8px;
-    background-color: #f8fafc;
-    border: 1px solid #e6eef5;
-}
-
-.contact-item .el-icon {
-    font-size: 24px;
-    color: #4a9cd8;
-    margin-top: 5px;
-}
-
-.contact-detail {
-    flex: 1;
-}
-
-.contact-detail h3 {
-    margin: 0 0 8px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.contact-detail p {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 16px;
-}
-
-.email-link {
-    color: #4a9cd8;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.email-link:hover {
-    color: #1a6ca8;
-    text-decoration: underline;
-}
-
-.contact-note {
-    font-size: 14px !important;
-    color: #7f8c8d !important;
-    margin-top: 5px !important;
-}
-
-.contact-form {
-    flex: 1;
-    padding: 20px;
-    border-radius: 8px;
-    max-height: 300px;
-    background-color: #f8fafc;
-    border: 1px solid #e6eef5;
-}
-
-.form-title {
-    margin: 0 0 20px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-/* 快速链接 */
-.quick-links {
-    margin-bottom: 20px;
-}
-
-.links-card {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-}
-
-.links-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-}
-
-.link-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px 10px;
-    cursor: pointer;
-    transition: all 0.3s;
-    border-radius: 8px;
-}
-
-.link-item:hover {
-    background-color: #f0f7ff;
-}
-
-.link-item .el-icon {
-    font-size: 24px;
-    color: #4a9cd8;
-    margin-bottom: 8px;
-}
-
-/* 响应式设计 */
-@media screen and (max-width: 768px) {
-    .guide-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .contact-content {
-        flex-direction: column;
-    }
-
-    .links-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
+@import '@/assets/css/common.css';
+@import '@/assets/css/components/search.css';
+@import '@/assets/css/help.css';
 </style>

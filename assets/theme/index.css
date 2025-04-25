@@ -1,0 +1,9 @@
+@import './variables.css';
+@import './light.css';
+@import './dark.css';
+@import './common.css';
+
+/* 全局过渡效果 */
+:root {
+  transition: all 0.3s ease;
+}

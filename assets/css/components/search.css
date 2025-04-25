@@ -1,0 +1,71 @@
+/* 搜索结果 */
+.search-results-container {
+  margin-bottom: 20px;
+}
+
+.search-results-card {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: none;
+  transition: all 0.3s;
+}
+
+.search-results-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.results-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.search-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 10px;
+}
+
+.search-result-item {
+  padding: 15px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  border-left: 3px solid #4a9cd8;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.search-result-item:hover {
+  background-color: #e1f0ff;
+  transform: translateX(5px);
+}
+
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+}
+
+.result-content {
+  color: #7f8c8d;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.no-results {
+  padding: 30px 0;
+  text-align: center;
+}

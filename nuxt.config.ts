@@ -45,5 +45,6 @@ export default {
   css: [
     '~/node_modules/element-plus/dist/index.css',
     '~/node_modules/element-plus/theme-chalk/display.css',
+    '~/assets/theme/index.css',
   ],
 }

@@ -1,0 +1,30 @@
+/* 深色主题变量 */
+:root[data-theme='dark'] {
+  /* 主色调 */
+  --primary-color: rgb(16, 54, 89);
+  --primary-color-hover: #1890ff;
+  --primary-color-pressed: #0958b5;
+
+  /* 文字颜色 */
+  --text-primary: #e6e6e6;
+  --text-secondary: #a6a6a6;
+  --text-disabled: #737373;
+
+  /* 标题颜色 */
+  --title-color: rgb(255, 255, 255);
+
+  /* 背景颜色 */
+  --bg-primary: #141414;
+  --bg-secondary: #1f1f1f;
+  --bg-tertiary: #262626;
+
+  /* 边框颜色 */
+  --border-color: #434343;
+  --border-color-hover: #177ddc;
+
+  /* 功能色 */
+  --success-color: #49aa19;
+  --warning-color: #d89614;
+  --danger-color: #d32029;
+  --info-color: #737373;
+}

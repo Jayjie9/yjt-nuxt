@@ -310,12 +310,12 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="disease-page">
+    <div class="page-common">
         <!-- 页面头部 -->
         <div class="page-header">
             <div class="header-content">
-                <h1 class="page-title">疾病百科</h1>
-                <p class="page-subtitle">了解疾病知识，关注健康生活</p>
+                <h1 class="header-title">疾病百科</h1>
+                <p class="header-subtitle">了解疾病知识，关注健康生活</p>
 
                 <!-- 搜索框 -->
                 <div class="search-container">
@@ -327,7 +327,7 @@ onMounted(() => {
                             </el-icon>
                         </template>
                         <template #append>
-                            <el-button @click="searchDisease" :loading="isSearching">
+                            <el-button @click="searchDisease">
                                 搜索
                             </el-button>
                         </template>
@@ -726,10 +726,36 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 页面基础样式 */
-.disease-page {
-    min-height: 100vh;
-    background-color: #f0f5f9;
+@import '@/assets/css/common.css';
+@import '@/assets/css/components/search.css';
+
+/* 页面头部 */
+.page-header {
+    padding: 60px 0 80px 0;
+    margin-bottom: 20px;
+}
+
+.header-content {
+    padding: 0 20px;
+}
+
+.header-subtitle {
+    font-size: 1.1rem;
+}
+
+/* 主内容区域 */
+.main-content {
+    max-width: 1000px;
+}
+
+/* 搜索结果 */
+.result-content {
+    margin-bottom: 10px;
+}
+
+.result-action {
+    display: flex;
+    justify-content: flex-end;
 }
 
 /* 病情分析相关样式 */
@@ -754,12 +780,11 @@ onMounted(() => {
     transform: translateY(-5px);
 }
 
-/* AI问诊卡片样式 */
+/* 卡片样式 */
 .ai-card {
     background: linear-gradient(to right bottom, #f0f9ff, #e6f7ff);
 }
 
-/* 病情分析卡片特有样式 */
 .analysis-card {
     background: linear-gradient(to right bottom, #f0fff4, #e6ffec);
 }
@@ -813,163 +838,6 @@ onMounted(() => {
 .analysis-image img {
     max-width: 100%;
     height: auto;
-}
-
-/* 页面头部 */
-.page-header {
-    background: linear-gradient(135deg, #4a9cd8 0%, #1a6ca8 100%);
-    padding: 60px 0 80px 0;
-    margin-bottom: 20px;
-    color: white;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.page-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url('/images/header-pattern.svg');
-    background-size: cover;
-    opacity: 0.1;
-    pointer-events: none;
-}
-
-.header-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-    position: relative;
-    z-index: 2;
-}
-
-.page-title {
-    font-size: 2.2rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.page-subtitle {
-    font-size: 1.1rem;
-    opacity: 0.9;
-    margin-bottom: 2rem;
-}
-
-/* 搜索框 */
-.search-container {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.search-input {
-    --el-input-height: 50px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-radius: 25px;
-    overflow: hidden;
-}
-
-.search-input :deep(.el-input__wrapper) {
-    padding-left: 15px;
-    border-radius: 25px;
-}
-
-.search-input :deep(.el-input-group__append) {
-    border-top-right-radius: 25px;
-    border-bottom-right-radius: 25px;
-    overflow: hidden;
-}
-
-.search-icon {
-    font-size: 18px;
-    color: #95a5a6;
-}
-
-/* 主内容区域 */
-.main-content {
-    max-width: 1200px;
-    margin: -40px auto 40px;
-    padding: 0 20px;
-    position: relative;
-}
-
-/* 搜索结果 */
-.search-results-container {
-    margin-bottom: 20px;
-}
-
-.search-results-card {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-    transition: all 0.3s;
-}
-
-.search-results-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-}
-
-.card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 15px 20px;
-    border-bottom: 1px solid #edf2f7;
-}
-
-.results-title {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.search-results-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    padding: 20px;
-}
-
-.search-result-item {
-    padding: 15px;
-    border-radius: 8px;
-    background-color: #f8fafc;
-    border-left: 3px solid #4a9cd8;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.search-result-item:hover {
-    background-color: #e1f0ff;
-    transform: translateX(5px);
-}
-
-.result-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 8px;
-}
-
-.result-content {
-    color: #7f8c8d;
-    font-size: 14px;
-    line-height: 1.5;
-    margin-bottom: 10px;
-}
-
-.result-action {
-    display: flex;
-    justify-content: flex-end;
 }
 
 /* AI问诊部分 */
@@ -1623,6 +1491,7 @@ onMounted(() => {
     color: #2c3e50;
     margin: 0 0 10px;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
@@ -1639,6 +1508,7 @@ onMounted(() => {
     line-height: 1.6;
     margin-bottom: 15px;
     display: -webkit-box;
+    line-clamp: 3;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;

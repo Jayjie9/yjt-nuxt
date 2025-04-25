@@ -1,0 +1,17 @@
+/* 预加载主题样式，避免闪烁 */
+html {
+  background-color: linear-gradient(
+    135deg,
+    #1890ff 0%,
+    #096dd9 100%
+  ); /* 默认浅色背景 */
+  color: #2c3e50; /* 默认浅色文字 */
+}
+
+/* 针对暗色主题的媒体查询预设 */
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: #141414;
+    color: #e6e6e6;
+  }
+}

@@ -292,37 +292,21 @@ function handleResize(): void {
 }
 
 // 导航相关方法
-/**
- * 导航到首页
- */
 function goHome() {
   navigateTo('/')
 }
 
-/**
- * 导航到帮助中心页面
- */
 async function goToHelp() {
   navigateTo('/help')
 }
-
-/**
- * 导航到登录页面
- */
 async function goToLogin() {
   navigateTo('/login')
 }
 
-/**
- * 导航到病情分析页面
- */
 async function goToAnalysisIllness() {
   navigateTo('/disease')
 }
 
-/**
- * 导航到预约挂号页面
- */
 async function goToAppointment() {
   navigateTo('/')
 }
@@ -342,7 +326,6 @@ const handleLoginCommand = (command: string | number | object) => {
     }
     return
   }
-
   // 处理各种导航选项
   if (command === '个人中心') {
     navigateTo('/user')

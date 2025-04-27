@@ -344,7 +344,7 @@ onMounted(() => {
 
 /* 主内容区域 */
 .main-content {
-    max-width: 900px;
+    max-width: 800px;
     margin: -20px auto 40px;
     padding: 0 20px;
     position: relative;

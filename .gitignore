@@ -22,4 +22,8 @@ logs
 .env
 .env.*
 !.env.example
+
+# other
+.trae
+.vscode
 周报.txt

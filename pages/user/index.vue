@@ -1,83 +1,3 @@
-/**
-// getUserInfoDollar 接口响应示例
-{
-"code": 200,
-"message": "成功",
-"data": {
-"id": 10,
-"createTime": "2023-05-15 14:32:15",
-"updateTime": "2023-05-15 14:32:15",
-"isDeleted": 0,
-"param": {
-"authStatusString": "已认证"
-},
-"userId": "1234567890",
-"name": "张三",
-"certificatesType": "身份证",
-"certificatesNo": "110101199001011234",
-"certificatesUrl": "https://example.com/id-card-image.jpg",
-"authStatus": 1,
-"status": 1,
-"phone": "13800138000"
-}
-}
-
-// findByDictCodeDollar 接口响应示例
-{
-"code": 200,
-"message": "成功",
-"data": [
-{
-"id": 1,
-"parentId": 0,
-"name": "身份证",
-"value": "1",
-"dictCode": "CertificatesType",
-"createTime": "2023-05-01 00:00:00",
-"updateTime": "2023-05-01 00:00:00",
-"isDeleted": 0,
-"param": {}
-},
-{
-"id": 2,
-"parentId": 0,
-"name": "护照",
-"value": "2",
-"dictCode": "CertificatesType",
-"createTime": "2023-05-01 00:00:00",
-"updateTime": "2023-05-01 00:00:00",
-"isDeleted": 0,
-"param": {}
-},
-{
-"id": 3,
-"parentId": 0,
-"name": "军官证",
-"value": "3",
-"dictCode": "CertificatesType",
-"createTime": "2023-05-01 00:00:00",
-"updateTime": "2023-05-01 00:00:00",
-"isDeleted": 0,
-"param": {}
-}
-]
-}
-
-// saveUserAuth 接口请求示例
-{
-"name": "张三",
-"certificatesType": "身份证",
-"certificatesNo": "110101199001011234",
-"certificatesUrl": "https://example.com/id-card-image.jpg"
-}
-
-// saveUserAuth 接口响应示例
-{
-"code": 200,
-"message": "成功",
-"data": null
-}
-*/
 <script setup>
 import { ElMessage } from 'element-plus'
 import { useApi } from '~/composables'
@@ -92,8 +12,94 @@ import {
   Lock,
   Document,
   Bell,
-  House
+  House,
+  ArrowDown,
+  ArrowUp,
+  Delete,
+  Location,
+  Star
 } from '@element-plus/icons-vue'
+
+/**
+// getUserInfoDollar 接口响应示例
+{
+  "code": 200,
+  "message": "成功",
+  "data": {
+    "id": 10,
+    "createTime": "2023-05-15 14:32:15",
+    "updateTime": "2023-05-15 14:32:15",
+    "isDeleted": 0,
+    "param": {
+      "authStatusString": "已认证"
+    },
+    "userId": "1234567890",
+    "name": "张三",
+    "certificatesType": "身份证",
+    "certificatesNo": "110101199001011234",
+    "certificatesUrl": "https://example.com/id-card-image.jpg",
+    "authStatus": 1,
+    "status": 1,
+    "phone": "13800138000"
+  }
+}
+
+// findByDictCodeDollar 接口响应示例
+{
+  "code": 200,
+  "message": "成功",
+  "data": [
+    {
+      "id": 1,
+      "parentId": 0,
+      "name": "身份证",
+      "value": "1",
+      "dictCode": "CertificatesType",
+      "createTime": "2023-05-01 00:00:00",
+      "updateTime": "2023-05-01 00:00:00",
+      "isDeleted": 0,
+      "param": {}
+    },
+    {
+      "id": 2,
+      "parentId": 0,
+      "name": "护照",
+      "value": "2",
+      "dictCode": "CertificatesType",
+      "createTime": "2023-05-01 00:00:00",
+      "updateTime": "2023-05-01 00:00:00",
+      "isDeleted": 0,
+      "param": {}
+    },
+    {
+      "id": 3,
+      "parentId": 0,
+      "name": "军官证",
+      "value": "3",
+      "dictCode": "CertificatesType",
+      "createTime": "2023-05-01 00:00:00",
+      "updateTime": "2023-05-01 00:00:00",
+      "isDeleted": 0,
+      "param": {}
+    }
+  ]
+}
+
+// saveUserAuth 接口请求示例
+{
+  "name": "张三",
+  "certificatesType": "身份证",
+  "certificatesNo": "110101199001011234",
+  "certificatesUrl": "https://example.com/id-card-image.jpg"
+}
+
+// saveUserAuth 接口响应示例
+{
+  "code": 200,
+  "message": "成功",
+  "data": null
+}
+*/
 
 // 导入api
 const api = useApi()
@@ -113,6 +119,7 @@ const fileUrl = ref('http://localhost:9999/api/oss/file/fileUpload')
 const userInfo = reactive({
   param: {}
 })
+const userCollect = ref([])
 const submitBnt = ref('提交')
 const activeTab = ref('profile')
 
@@ -124,6 +131,14 @@ const mockUserStats = reactive({
   notifications: 0
 })
 
+// 收藏数据
+const favoriteHospitals = ref([])
+const favoriteDiseases = ref([])
+const hospitalLimit = ref(4) // 默认显示4个医院
+const diseaseLimit = ref(4) // 默认显示4个疾病
+const showAllHospitals = ref(false)
+const showAllDiseases = ref(false)
+
 const getUserInfo = async () => {
   const { data: response } = await userInfoApi.getUserInfoDollar()
   Object.assign(userInfo, response.data)
@@ -134,6 +149,56 @@ const getUserInfo = async () => {
     mockUserStats.completedVisits = Math.floor(Math.random() * 3)
     mockUserStats.savedHospitals = Math.floor(Math.random() * 4) + 1
     mockUserStats.notifications = Math.floor(Math.random() * 3)
+  }
+}
+
+const getUserCollect = async () => {
+  try {
+    // 使用真实API调用获取收藏数据
+    const { data: response } = await userInfoApi.getUserCollectDollar()
+    // 处理收藏数据
+    if (response.code === 200 && response.data) {
+      // 处理医院数据
+      if (response.data.hospitals && Array.isArray(response.data.hospitals)) {
+        favoriteHospitals.value = response.data.hospitals;
+        // 更新统计数据
+        mockUserStats.savedHospitals = favoriteHospitals.value.length;
+      } else {
+        favoriteHospitals.value = [];
+      }
+
+      // 处理疾病数据
+      if (response.data.diseases && Array.isArray(response.data.diseases)) {
+        favoriteDiseases.value = response.data.diseases;
+      } else {
+        favoriteDiseases.value = [];
+      }
+    }
+  } catch (error) {
+    console.error('获取收藏数据失败:', error);
+    ElMessage.error('获取收藏数据失败');
+  }
+}
+
+// 删除收藏
+const deleteCollection = async (id, type) => {
+  try {
+    const { data: response } = await userInfoApi.deleteCollectDollar(id)
+    if (response.code === 200) {
+      ElMessage.success('取消收藏成功')
+      // 更新收藏列表
+      if (type === 'hospital') {
+        favoriteHospitals.value = favoriteHospitals.value.filter(item => item.collectionId !== id)
+        mockUserStats.savedHospitals = favoriteHospitals.value.length
+      } else if (type === 'disease') {
+        favoriteDiseases.value = favoriteDiseases.value.filter(item => item.collectionId !== id)
+      }
+    } else {
+      ElMessage.error(response.message || '取消收藏失败')
+    }
+  } catch (error) {
+    console.error('取消收藏失败:', error)
+    ElMessage.error('操作失败，请稍后重试')
   }
 }
 
@@ -202,8 +267,35 @@ const changeTab = (tab) => {
   activeTab.value = tab
 }
 
+// 切换显示全部/部分收藏医院
+const toggleHospitals = () => {
+  showAllHospitals.value = !showAllHospitals.value
+}
+
+// 切换显示全部/部分收藏疾病
+const toggleDiseases = () => {
+  showAllDiseases.value = !showAllDiseases.value
+}
+
+// 获取要显示的医院列表
+const displayedHospitals = computed(() => {
+  if (showAllHospitals.value) {
+    return favoriteHospitals.value
+  }
+  return favoriteHospitals.value.slice(0, hospitalLimit.value)
+})
+
+// 获取要显示的疾病列表
+const displayedDiseases = computed(() => {
+  if (showAllDiseases.value) {
+    return favoriteDiseases.value
+  }
+  return favoriteDiseases.value.slice(0, diseaseLimit.value)
+})
+
 const init = async () => {
   await getUserInfo()
+  await getUserCollect()
   await getDict()
 }
 
@@ -279,9 +371,9 @@ onMounted(() => {
         </div>
         <div class="tab-item" :class="{ active: activeTab === 'services' }" @click="changeTab('services')">
           <el-icon>
-            <Calendar />
+            <Document />
           </el-icon>
-          <span>医疗服务</span>
+          <span>健康档案</span>
         </div>
         <div class="tab-item" :class="{ active: activeTab === 'security' }" @click="changeTab('security')">
           <el-icon>
@@ -291,54 +383,14 @@ onMounted(() => {
         </div>
         <div class="tab-item" :class="{ active: activeTab === 'notifications' }" @click="changeTab('notifications')">
           <el-icon>
-            <Bell />
+            <Message />
           </el-icon>
-          <span>消息通知</span>
+          <span>就诊记录</span>
         </div>
       </div>
 
       <!-- 个人资料标签页内容 -->
       <div v-if="activeTab === 'profile'">
-        <!-- 快速导航卡片 -->
-        <div class="quick-nav-section" v-if="userInfo.authStatus == 1">
-          <el-card class="quick-nav-card" shadow="hover">
-            <div class="nav-grid">
-              <div class="nav-item" @click="$router.push('/patient')">
-                <div class="nav-icon">
-                  <el-icon>
-                    <User />
-                  </el-icon>
-                </div>
-                <div class="nav-label">就诊人管理</div>
-              </div>
-              <div class="nav-item" @click="$router.push('/')">
-                <div class="nav-icon">
-                  <el-icon>
-                    <House />
-                  </el-icon>
-                </div>
-                <div class="nav-label">首页</div>
-              </div>
-              <div class="nav-item">
-                <div class="nav-icon">
-                  <el-icon>
-                    <Message />
-                  </el-icon>
-                </div>
-                <div class="nav-label">就诊记录</div>
-              </div>
-              <div class="nav-item">
-                <div class="nav-icon">
-                  <el-icon>
-                    <Document />
-                  </el-icon>
-                </div>
-                <div class="nav-label">健康档案</div>
-              </div>
-            </div>
-          </el-card>
-        </div>
-
         <!-- 实名认证卡片 -->
         <el-card class="auth-card" shadow="hover">
           <template #header>
@@ -445,64 +497,118 @@ onMounted(() => {
         </el-card>
       </div>
 
-      <!-- 医疗服务标签页内容 -->
+      <!-- 健康档案标签页内容 -->
       <div v-if="activeTab === 'services'">
-        <el-card class="service-card" shadow="hover">
+        <!-- 收藏医院卡片 -->
+        <el-card class="service-card" shadow="hover" style="margin-bottom: 20px;">
           <template #header>
             <div class="section-title">
               <el-icon>
-                <Calendar />
+                <House />
               </el-icon>
-              <h2 class="service-title">医疗服务</h2>
+              <h2 class="service-title">收藏医院</h2>
             </div>
           </template>
 
           <div v-if="userInfo.authStatus == 1">
-            <div class="service-content">
-              <div class="service-grid">
-                <div class="service-item">
-                  <div class="service-icon">
-                    <el-icon>
-                      <Calendar />
+            <div class="favorite-content">
+              <div v-if="favoriteHospitals.length > 0" class="favorite-grid">
+                <div v-for="item in displayedHospitals" :key="item.collectionId" class="favorite-item"
+                  @click="$router.push(`/hospital/${item.hospital.hoscode}`)">
+                  <!-- 收藏标记 -->
+                  <div class="favorite-badge">
+                    <el-icon color="#ff6b6b">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                      </svg>
                     </el-icon>
                   </div>
-                  <div class="service-name">预约挂号</div>
-                  <div class="service-desc">线上预约全国知名医院</div>
-                  <el-button type="primary" plain size="small" @click="$router.push('/')">立即预约</el-button>
-                </div>
-                <div class="service-item">
-                  <div class="service-icon">
-                    <el-icon>
-                      <User />
-                    </el-icon>
+
+                  <!-- 删除按钮 -->
+                  <div class="favorite-delete">
+                    <el-button type="danger" circle size="small"
+                      @click.stop="deleteCollection(item.collectionId, 'hospital')" title="取消收藏">
+                      <el-icon>
+                        <Delete />
+                      </el-icon>
+                    </el-button>
                   </div>
-                  <div class="service-name">就诊人管理</div>
-                  <div class="service-desc">管理您的就诊人信息</div>
-                  <el-button type="primary" plain size="small" @click="$router.push('/patient')">管理就诊人</el-button>
-                </div>
-                <div class="service-item">
-                  <div class="service-icon">
-                    <el-icon>
-                      <Document />
-                    </el-icon>
+
+                  <!-- 医院Logo -->
+                  <div class="favorite-icon">
+                    <img v-if="item.hospital.logoData && item.hospital.logoData !== 'test'"
+                      :src="item.hospital.logoData" alt="医院logo" class="hospital-logo">
+                    <div v-else class="hospital-logo-placeholder">
+                      <span>{{ item.hospital.hosname.substring(0, 2) }}</span>
+                    </div>
                   </div>
-                  <div class="service-name">检查报告</div>
-                  <div class="service-desc">查看您的检查报告</div>
-                  <el-button type="primary" plain size="small">查看报告</el-button>
-                </div>
-                <div class="service-item">
-                  <div class="service-icon">
-                    <el-icon>
-                      <Message />
-                    </el-icon>
+
+                  <!-- 医院信息 -->
+                  <div class="favorite-info">
+                    <div class="favorite-name">{{ item.hospital.hosname }}</div>
+                    <div class="favorite-type">
+                      <el-tag size="small" effect="plain" type="success">{{ item.hospital.hostype === '1' ? '三甲医院' :
+                        '综合医院'
+                      }}</el-tag>
+                    </div>
+                    <div class="favorite-address">
+                      <el-icon>
+                        <Location />
+                      </el-icon>
+                      <span>{{ item.hospital.address }}</span>
+                    </div>
+                    <div class="favorite-intro" v-if="item.hospital.intro">
+                      <el-tooltip :content="item.hospital.intro" placement="top" :show-after="500">
+                        <div class="intro-text">{{ item.hospital.intro }}</div>
+                      </el-tooltip>
+                    </div>
+                    <div class="favorite-route" v-if="item.hospital.route">
+                      <el-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                          width="16" height="16">
+                          <path
+                            d="M12 2c-4.42 0-8 3.58-8 8 0 1.49.42 2.85 1.12 4.03L12 23l6.88-8.97c.7-1.18 1.12-2.54 1.12-4.03 0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" />
+                        </svg></el-icon>
+                      <span>{{ item.hospital.route }}</span>
+                    </div>
+                    <div class="favorite-actions">
+                      <el-button type="primary" size="small"
+                        @click="$router.push(`/hospital/${item.hospital.hoscode}`)">
+                        <el-icon>
+                          <Calendar />
+                        </el-icon> 预约挂号
+                      </el-button>
+                      <el-button type="info" plain size="small" @click="$router.push(`/hospital/${hospital.hoscode}`)">
+                        查看详情
+                      </el-button>
+                    </div>
                   </div>
-                  <div class="service-name">在线咨询</div>
-                  <div class="service-desc">在线咨询医生</div>
-                  <el-button type="primary" plain size="small">立即咨询</el-button>
                 </div>
+              </div>
+
+              <div v-if="favoriteHospitals.length === 0" class="empty-state">
+                <el-empty description="暂无收藏医院" :image-size="100">
+                  <template #description>
+                    <p>您还没有收藏任何医院</p>
+                  </template>
+                  <el-button type="primary" @click="$router.push('/')">
+                    去浏览医院
+                  </el-button>
+                </el-empty>
+              </div>
+
+              <div class="view-more-container" v-if="favoriteHospitals.length > hospitalLimit.value">
+                <el-button type="primary" plain @click="toggleHospitals">
+                  {{ showAllHospitals ? '收起' : `查看全部 ${favoriteHospitals.length} 家医院` }}
+                  <el-icon class="el-icon--right">
+                    <ArrowDown v-if="!showAllHospitals" />
+                    <ArrowUp v-else />
+                  </el-icon>
+                </el-button>
               </div>
             </div>
           </div>
+
           <div v-else class="service-unauthorized">
             <div class="unauthorized-icon">
               <el-icon>
@@ -510,8 +616,93 @@ onMounted(() => {
               </el-icon>
             </div>
             <h3>您尚未完成实名认证</h3>
-            <p>完成实名认证后才能使用医疗服务</p>
+            <p>完成实名认证后才能查看收藏的医院</p>
             <el-button type="primary" @click="activeTab = 'profile'">去认证</el-button>
+          </div>
+        </el-card>
+
+        <!-- 收藏疾病卡片 -->
+        <el-card class="service-card" shadow="hover">
+          <template #header>
+            <div class="section-title">
+              <el-icon>
+                <Document />
+              </el-icon>
+              <h2 class="service-title">收藏疾病</h2>
+            </div>
+          </template>
+
+          <div class="favorite-content">
+            <div v-if="favoriteDiseases.length > 0" class="favorite-grid">
+              <div v-for="item in displayedDiseases" :key="item.collectionId" class="favorite-item disease-item">
+                <!-- 收藏标记 -->
+                <div class="favorite-badge">
+                  <el-icon color="#5e72e4">
+                    <Star />
+                  </el-icon>
+                </div>
+
+                <!-- 删除按钮 -->
+                <div class="favorite-delete">
+                  <el-button type="danger" circle size="small"
+                    @click.stop="deleteCollection(item.collectionId, 'disease')" title="取消收藏">
+                    <el-icon>
+                      <Delete />
+                    </el-icon>
+                  </el-button>
+                </div>
+
+                <!-- 疾病信息 -->
+                <div class="favorite-info">
+                  <div class="favorite-name">{{ item.disease.name }}</div>
+                  <div class="favorite-type">
+                    <el-tag size="small" effect="plain" type="info">{{ item.disease.category }}</el-tag>
+                    <el-tag size="small" effect="plain" type="danger" v-if="item.disease.riskLevel">风险等级: {{
+                      item.disease.riskLevel }}</el-tag>
+                  </div>
+                  <div class="favorite-intro" v-if="item.disease.description">
+                    <el-tooltip :content="item.disease.description" placement="top" :show-after="500">
+                      <div class="intro-text">{{ item.disease.description }}</div>
+                    </el-tooltip>
+                  </div>
+                  <div class="recommendations"
+                    v-if="item.disease.recommendations && item.disease.recommendations.length > 0">
+                    <div class="recommendation-title">建议:</div>
+                    <ul class="recommendation-list">
+                      <li v-for="(rec, index) in item.disease.recommendations" :key="index">{{ rec }}</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="favoriteDiseases.length === 0" class="empty-state">
+              <el-empty description="暂无收藏疾病" :image-size="100">
+                <template #description>
+                  <p>您还没有收藏任何疾病</p>
+                </template>
+              </el-empty>
+            </div>
+
+            <div v-if="favoriteDiseases.length > diseaseLimit" class="show-more">
+              <el-button type="text" @click="toggleDiseases">
+                {{ showAllDiseases ? '收起' : '查看更多' }}
+                <el-icon>
+                  <component :is="showAllDiseases ? ArrowUp : ArrowDown" />
+                </el-icon>
+              </el-button>
+            </div>
+
+            <div v-if="!userInfo.authStatus" class="service-unauthorized">
+              <div class="unauthorized-icon">
+                <el-icon>
+                  <Lock />
+                </el-icon>
+              </div>
+              <h3>您尚未完成实名认证</h3>
+              <p>完成实名认证后才能查看收藏的疾病</p>
+              <el-button type="primary" @click="activeTab = 'profile'">去认证</el-button>
+            </div>
           </div>
         </el-card>
       </div>
@@ -571,17 +762,32 @@ onMounted(() => {
               </div>
               <el-button type="primary" plain size="small">绑定</el-button>
             </div>
+
+            <div class="security-item">
+              <div class="security-info">
+                <div class="security-icon">
+                  <el-icon>
+                    <Delete />
+                  </el-icon>
+                </div>
+                <div class="security-detail">
+                  <div class="security-name">注销账号</div>
+                  <div class="security-desc">销毁您的所有账号信息</div>
+                </div>
+              </div>
+              <el-button type="danger" plain size="small">注销</el-button>
+            </div>
           </div>
         </el-card>
       </div>
 
-      <!-- 消息通知标签页内容 -->
+      <!-- 就诊记录标签页内容 -->
       <div v-if="activeTab === 'notifications'">
         <el-card class="notification-card" shadow="hover">
           <template #header>
             <div class="section-title">
               <el-icon>
-                <Bell />
+                <DocumentChecked />
               </el-icon>
               <h2 class="notification-title">消息通知</h2>
             </div>
@@ -786,58 +992,6 @@ onMounted(() => {
   font-size: 20px;
 }
 
-/* 快速导航 */
-.quick-nav-section {
-  margin-bottom: 20px;
-}
-
-.quick-nav-card {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: none;
-}
-
-.nav-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 10px;
-  cursor: pointer;
-  transition: all 0.3s;
-  border-radius: 8px;
-}
-
-.nav-item:hover {
-  background-color: #f0f7ff;
-}
-
-.nav-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background-color: #e1f0ff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.nav-icon .el-icon {
-  font-size: 24px;
-  color: #4a9cd8;
-}
-
-.nav-label {
-  font-size: 14px;
-  color: #2c3e50;
-}
-
 /* 认证卡片 */
 .auth-card {
   border-radius: 12px;
@@ -1038,46 +1192,255 @@ onMounted(() => {
   gap: 16px;
 }
 
-/* 医疗服务网格 */
-.service-grid {
+/* 收藏项目网格 */
+.favorite-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
   margin-top: 20px;
 }
 
-.service-item {
+/* 收藏医院卡片样式 */
+.favorite-item {
   background-color: #f8fafc;
   border-radius: 12px;
-  padding: 20px;
-  text-align: center;
+  padding: 0;
   transition: all 0.3s;
   border: 1px solid #e6eef5;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
 }
 
-.service-item:hover {
+.favorite-item:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
   border-color: #4a9cd8;
 }
 
-.service-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+.disease-item {
+  background: linear-gradient(to bottom right, #f8f9fe, #ffffff);
+  border-left: 4px solid #5e72e4;
+}
+
+.favorite-delete {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.favorite-item:hover .favorite-delete {
+  opacity: 1;
+}
+
+.empty-state {
+  padding: 30px;
+  text-align: center;
+}
+
+.recommendations {
+  margin-top: 10px;
+}
+
+.recommendation-title {
+  font-weight: 500;
+  margin-bottom: 5px;
+  color: var(--el-text-color-secondary);
+}
+
+.recommendation-list {
+  padding-left: 20px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+}
+
+/* 收藏标记 */
+.favorite-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.favorite-icon {
+  width: 100%;
+  height: 120px;
   background-color: #e1f0ff;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
+  overflow: hidden;
+  border-bottom: 1px solid #ebeef5;
 }
 
-.service-icon .el-icon {
+.favorite-icon .el-icon {
   font-size: 28px;
   color: #4a9cd8;
+}
+
+.disease-icon {
+  background-color: #e1f5ee;
+}
+
+.disease-icon .el-icon {
+  color: #42b983;
+}
+
+.hospital-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hospital-logo-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #409eff 0%, #64b5f6 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 医院信息 */
+.favorite-info {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.favorite-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.favorite-type {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.favorite-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.favorite-address .el-icon {
+  margin-top: 3px;
+  flex-shrink: 0;
+  color: #909399;
+}
+
+.favorite-intro {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.intro-text {
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.5;
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  position: relative;
+  padding-left: 8px;
+  border-left: 3px solid #409eff;
+  background-color: #f5f7fa;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.favorite-route {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 15px;
+  line-height: 1.4;
+}
+
+.favorite-route .el-icon {
+  margin-top: 3px;
+  flex-shrink: 0;
+  color: #909399;
+}
+
+.favorite-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.view-more-container {
+  text-align: center;
+  margin-top: 25px;
+  margin-bottom: 10px;
+}
+
+.view-more-container .el-button {
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.view-more-container .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+}
+
+.empty-favorites {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f0f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.empty-icon .el-icon {
+  font-size: 40px;
+  color: #909399;
 }
 
 .service-name {
@@ -1284,6 +1647,19 @@ onMounted(() => {
 
   .tab-item {
     min-width: 100px;
+  }
+
+  .favorite-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .favorite-actions {
+    flex-direction: column;
+  }
+
+  .favorite-intro .intro-text {
+    -webkit-line-clamp: 2;
+    max-height: 45px;
   }
 }
 </style>

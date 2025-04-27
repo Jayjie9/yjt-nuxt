@@ -356,10 +356,34 @@ export const useUserApi = () => {
     return fetchGet(`/api/user/auth/getUserInfo`)
   }
 
+  // 获取用户收藏
+  const getUserCollectDollar = () => {
+    return fetchGet(`/api/user/collect/auth/getAll`)
+  }
+
+  // 判断是否收藏
+  const isCollectedDollar = (content: string) => {
+    return fetchGet(`/api/user/collect/auth/isCollected`, { content })
+  }
+
+  // 添加收藏
+  const addCollectDollar = (content: string) => {
+    return fetchGet(`/api/user/collect/auth/add`, { content })
+  }
+
+  // 删除收藏
+  const deleteCollectDollar = (id: number | string) => {
+    return fetchDelete(`/api/user/collect/auth/del`, { id })
+  }
+
   return {
     saveUserAuth,
     getUserInfo,
     getUserInfoDollar,
+    getUserCollectDollar,
+    isCollectedDollar,
+    addCollectDollar,
+    deleteCollectDollar,
   }
 }
 

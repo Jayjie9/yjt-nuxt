@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { Search, Location, Phone, Trophy, Calendar } from '@element-plus/icons-vue'
+import { Search, Location, Phone, Trophy, Calendar, Star, House } from '@element-plus/icons-vue'
 import { useApi } from '~/composables'
 import { useRoute, useRouter } from 'nuxt/app'
 import type { Hospital, BookingRule, HospitalDetailResponse } from '~/types/hospital'
@@ -18,6 +18,9 @@ const bookingRule = ref<BookingRule>({} as BookingRule)
 const departmentVoList = ref<Department[]>([])
 const activeIndex = ref(0)
 const loading = ref(true) // 添加加载状态
+const isCollected = ref(false) // 是否已收藏
+const collectLoading = ref(false) // 收藏加载状态
+const userCollection = ref<any>(null) // 用户收藏信息
 
 // 获取医院详情
 const fetchHospitalDetail = async () => {
@@ -29,7 +32,60 @@ const fetchHospitalDetail = async () => {
     if (response.code === 200) {
       hospital.value = response.data.hospital
       bookingRule.value = response.data.bookingRule
+      // 获取用户收藏信息
+      await checkIfCollected()
     }
+  }
+}
+
+
+// 获取UserCollection，检查当前医院是否已收藏
+const checkIfCollected = async () => {
+  const { data: response } = await api.user.isCollectedDollar(hoscode.value)
+  userCollection.value = response.data
+  if (response.data) {
+    isCollected.value = true
+  }
+}
+
+// 收藏/取消收藏医院
+const toggleCollect = async () => {
+  if (!userInfo.value) {
+    ElMessage.warning('请先登录并完成实名认证')
+    return
+  }
+
+  collectLoading.value = true
+  try {
+    if (isCollected.value) {
+      // 查找收藏ID
+      if (userCollection.value) {
+        const collectionId = userCollection.value.id
+        const { data: response } = await api.user.deleteCollectDollar(collectionId)
+        if (response.code === 200) {
+          ElMessage.success('取消收藏成功')
+          isCollected.value = false
+        } else {
+          ElMessage.error(response.message || '取消收藏失败')
+        }
+      }
+    } else {
+      // 添加收藏
+      const { data: response } = await api.user.addCollectDollar(hoscode.value)
+      if (response.code === 200) {
+        ElMessage.success('收藏成功')
+        isCollected.value = true
+        // 重新获取收藏列表
+        await checkIfCollected()
+      } else {
+        ElMessage.error(response.message || '收藏失败')
+      }
+    }
+  } catch (error) {
+    console.error('收藏操作失败', error)
+    ElMessage.error('操作失败，请稍后重试')
+  } finally {
+    collectLoading.value = false
   }
 }
 // 获取科室列表
@@ -43,10 +99,25 @@ const fetchDepartments = async () => {
   }
 }
 
+// 获取用户信息
+const userInfo = ref(null)
+const getUserInfo = async () => {
+  try {
+    const { data: response } = await api.user.getUserInfoDollar()
+    if (response.code === 200) {
+      userInfo.value = response.data
+    }
+  } catch (error) {
+    console.error('获取用户信息失败', error)
+  }
+}
+
 // 初始化数据
 const init = async () => {
   loading.value = true
   try {
+    // 获取用户信息
+    await getUserInfo()
     // 获取医院详情
     await fetchHospitalDetail()
     // 获取科室列表
@@ -117,7 +188,12 @@ onMounted(() => {
               :src="hospital.logoData ? `data:image/jpeg;base64,${hospital.logoData}` : '/images/hospital-default.png'"
               :alt="hospital.hosname" fit="cover" />
             <div class="hospital-info">
-              <h1 class="hospital-title">{{ hospital.hosname }}</h1>
+              <div class="hospital-title-row">
+                <h1 class="hospital-title">{{ hospital.hosname }}</h1>
+                <el-button :type="isCollected ? 'danger' : 'primary'" :icon="Star" circle size="large"
+                  :loading="collectLoading" @click="toggleCollect" class="collect-btn"
+                  :title="isCollected ? '取消收藏' : '收藏医院'" />
+              </div>
               <div class="hospital-tags">
                 <el-tag size="large" type="primary" effect="plain">{{ hospital.param.hostypeString }}</el-tag>
                 <el-tag size="large" type="success" effect="plain">可预约</el-tag>
@@ -174,7 +250,7 @@ onMounted(() => {
             </div>
             <div class="stat-item">
               <el-icon>
-                <Office />
+                <House />
               </el-icon>
               <div class="stat-content">
                 <div class="stat-label">科室数量</div>
@@ -323,9 +399,21 @@ onMounted(() => {
   flex: 1;
 }
 
+.hospital-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
 .hospital-title {
   font-size: 28px;
-  margin: 0 0 16px;
+  margin: 0;
+}
+
+.collect-btn {
+  transition: all 0.3s;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 .hospital-tags {

@@ -2,109 +2,15 @@
 import { ElMessage } from 'element-plus'
 import { useApi } from '~/composables'
 import {
-  User,
-  Upload,
-  Check,
-  Calendar,
-  Phone,
-  Message,
-  Setting,
-  Lock,
-  Document,
-  Bell,
-  House,
-  ArrowDown,
-  ArrowUp,
-  Delete,
-  Location,
-  Star
+  User, Upload, Check, Calendar, Phone, Message, Setting, Lock, Document, Bell,
+  House, ArrowDown, ArrowUp, Delete, Location, Star
 } from '@element-plus/icons-vue'
-
-/**
-// getUserInfoDollar 接口响应示例
-{
-  "code": 200,
-  "message": "成功",
-  "data": {
-    "id": 10,
-    "createTime": "2023-05-15 14:32:15",
-    "updateTime": "2023-05-15 14:32:15",
-    "isDeleted": 0,
-    "param": {
-      "authStatusString": "已认证"
-    },
-    "userId": "1234567890",
-    "name": "张三",
-    "certificatesType": "身份证",
-    "certificatesNo": "110101199001011234",
-    "certificatesUrl": "https://example.com/id-card-image.jpg",
-    "authStatus": 1,
-    "status": 1,
-    "phone": "13800138000"
-  }
-}
-
-// findByDictCodeDollar 接口响应示例
-{
-  "code": 200,
-  "message": "成功",
-  "data": [
-    {
-      "id": 1,
-      "parentId": 0,
-      "name": "身份证",
-      "value": "1",
-      "dictCode": "CertificatesType",
-      "createTime": "2023-05-01 00:00:00",
-      "updateTime": "2023-05-01 00:00:00",
-      "isDeleted": 0,
-      "param": {}
-    },
-    {
-      "id": 2,
-      "parentId": 0,
-      "name": "护照",
-      "value": "2",
-      "dictCode": "CertificatesType",
-      "createTime": "2023-05-01 00:00:00",
-      "updateTime": "2023-05-01 00:00:00",
-      "isDeleted": 0,
-      "param": {}
-    },
-    {
-      "id": 3,
-      "parentId": 0,
-      "name": "军官证",
-      "value": "3",
-      "dictCode": "CertificatesType",
-      "createTime": "2023-05-01 00:00:00",
-      "updateTime": "2023-05-01 00:00:00",
-      "isDeleted": 0,
-      "param": {}
-    }
-  ]
-}
-
-// saveUserAuth 接口请求示例
-{
-  "name": "张三",
-  "certificatesType": "身份证",
-  "certificatesNo": "110101199001011234",
-  "certificatesUrl": "https://example.com/id-card-image.jpg"
-}
-
-// saveUserAuth 接口响应示例
-{
-  "code": 200,
-  "message": "成功",
-  "data": null
-}
-*/
 
 // 导入api
 const api = useApi()
 const dictApi = api.dictionary
 const userInfoApi = api.user
+
 
 const defaultForm = {
   name: '',
@@ -115,11 +21,11 @@ const defaultForm = {
 
 const userAuth = reactive({ ...defaultForm })
 const certificatesTypeList = ref([])
-const fileUrl = ref('http://localhost:9999/api/oss/file/fileUpload')
 const userInfo = reactive({
-  param: {}
+  param: {},
+  avatar: ''
 })
-const userCollect = ref([])
+const filename = ref('')
 const submitBnt = ref('提交')
 const activeTab = ref('profile')
 
@@ -139,6 +45,38 @@ const diseaseLimit = ref(4) // 默认显示4个疾病
 const showAllHospitals = ref(false)
 const showAllDiseases = ref(false)
 
+// 头像URL
+const avatarUrl = ref('')
+
+// 获取头像URL
+const getAvatarUrl = async () => {
+  const avatarId = userInfo.avatar
+  if (!avatarId) return
+
+  if (!import.meta.client) return // 避免 SSR 报错
+
+  const now = Date.now()
+  const cachedUrl = localStorage.getItem('avatar-url')
+  const cachedExpire = parseInt(localStorage.getItem('avatar-expire') || '0')
+
+  if (cachedUrl && cachedExpire > now) {
+    avatarUrl.value = cachedUrl
+    return
+  }
+
+  try {
+    const { data: response } = await api.oss.renewUrl(avatarId)
+    if (response.code === 200 && response.data) {
+      avatarUrl.value = response.data
+      localStorage.setItem('avatar-url', response.data)
+      localStorage.setItem('avatar-expire', (now + 10 * 60 * 1000).toString())
+    }
+  } catch (error) {
+    console.error('获取头像URL失败:', error)
+  }
+}
+
+
 const getUserInfo = async () => {
   const { data: response } = await userInfoApi.getUserInfoDollar()
   Object.assign(userInfo, response.data)
@@ -149,6 +87,11 @@ const getUserInfo = async () => {
     mockUserStats.completedVisits = Math.floor(Math.random() * 3)
     mockUserStats.savedHospitals = Math.floor(Math.random() * 4) + 1
     mockUserStats.notifications = Math.floor(Math.random() * 3)
+
+    // 如果有头像，获取头像URL
+    if (userInfo.avatar) {
+      await getAvatarUrl()
+    }
   }
 }
 
@@ -222,12 +165,30 @@ const getDict = async () => {
   certificatesTypeList.value = response.data
 }
 
-const onUploadSuccess = (response, file) => {
-  if (response.code !== 200) {
-    ElMessage.error("上传失败")
-    return
+// 处理证件上传请求
+const handleCertificateUpload = async (options) => {
+  try {
+    const { file } = options
+    // 使用API中的uploadFile函数上传文件
+    const { data: response } = await api.oss.uploadFile(file)
+
+    if (response.code !== 200) {
+      ElMessage.error('证件上传失败')
+      options.onError(new Error('上传失败'))
+      return
+    }
+
+    // 获取上传返回的数据并设置证件URL
+    userAuth.certificatesUrl = response.data.url
+
+    // 调用成功回调
+    options.onSuccess(response)
+    ElMessage.success('证件上传成功')
+  } catch (error) {
+    console.error('上传证件失败:', error)
+    ElMessage.error('证件上传失败，请稍后重试')
+    options.onError(error)
   }
-  userAuth.certificatesUrl = file.response.data
 }
 
 const beforeUpload = (file) => {
@@ -243,6 +204,52 @@ const beforeUpload = (file) => {
     return false
   }
   return true
+}
+
+// 头像上传前验证
+const beforeAvatarUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('头像大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
+// 处理头像上传请求
+const handleAvatarUpload = async (options) => {
+  try {
+    const { file } = options
+    // 使用API中的uploadFile函数上传文件
+    const { data: response } = await api.oss.uploadFile(file)
+
+    if (response.code !== 200) {
+      ElMessage.error('头像上传失败')
+      options.onError(new Error('上传失败'))
+      return
+    }
+
+    // 获取上传返回的数据
+    const { url, fileName } = response.data
+    // 直接使用返回的URL显示头像
+    avatarUrl.value = url
+    // 保存文件名用于后续URL续签
+    userInfo.avatar = fileName
+
+    // 调用成功回调
+    options.onSuccess(response)
+    ElMessage.success('头像更新成功')
+  } catch (error) {
+    console.error('更新头像失败:', error)
+    ElMessage.error('头像更新失败，请稍后重试')
+    options.onError(error)
+  }
 }
 
 // 表单验证规则
@@ -319,7 +326,16 @@ onMounted(() => {
       <el-card class="user-overview-card" shadow="hover">
         <div class="user-profile">
           <div class="profile-avatar">
-            <span>{{ userInfo.name ? userInfo.name.substring(0, 1) : '?' }}</span>
+            <img v-if="avatarUrl" :src="avatarUrl" alt="用户头像" class="avatar-image">
+            <span v-else>{{ userInfo.name ? userInfo.name.substring(0, 1) : '?' }}</span>
+            <div class="avatar-upload" v-if="userInfo.authStatus == 1">
+              <el-upload class="avatar-uploader" :http-request="handleAvatarUpload" :show-file-list="false"
+                :before-upload="beforeAvatarUpload">
+                <el-icon class="avatar-upload-icon">
+                  <Upload />
+                </el-icon>
+              </el-upload>
+            </div>
           </div>
           <div class="profile-info">
             <h2 class="profile-name">{{ userInfo.name || '未认证用户' }}</h2>
@@ -448,7 +464,7 @@ onMounted(() => {
 
               <el-form-item prop="certificatesUrl" label="上传证件：">
                 <div class="upload-section">
-                  <el-upload class="auth-upload" :action="fileUrl" :show-file-list="false" :on-success="onUploadSuccess"
+                  <el-upload class="auth-upload" :http-request="handleCertificateUpload" :show-file-list="false"
                     :before-upload="beforeUpload">
                     <div class="upload-area" v-if="!userAuth.certificatesUrl">
                       <el-icon class="upload-icon">
@@ -782,6 +798,7 @@ onMounted(() => {
       </div>
 
       <!-- 就诊记录标签页内容 -->
+
       <div v-if="activeTab === 'notifications'">
         <el-card class="notification-card" shadow="hover">
           <template #header>
@@ -830,6 +847,51 @@ onMounted(() => {
 .user-page {
   min-height: 100vh;
   background-color: #f0f5f9;
+}
+
+/* 头像样式 */
+.profile-avatar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f0f2f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #409eff;
+  overflow: hidden;
+  margin-right: 20px;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-upload {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.profile-avatar:hover .avatar-upload {
+  opacity: 1;
+}
+
+.avatar-upload-icon {
+  color: white;
+  font-size: 16px;
 }
 
 /* 页面头部 */
@@ -1370,6 +1432,7 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   position: relative;
@@ -1658,6 +1721,7 @@ onMounted(() => {
   }
 
   .favorite-intro .intro-text {
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     max-height: 45px;
   }

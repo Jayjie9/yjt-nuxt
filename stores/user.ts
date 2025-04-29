@@ -1,7 +1,4 @@
-/**
- * 用户状态管理
- * 负责管理用户登录状态、用户信息等
- */
+// File: /stores/user.ts
 import { defineStore } from 'pinia'
 import { useAuth } from '~/composables/useAuth'
 
@@ -9,56 +6,96 @@ export const useUserStore = defineStore('user', {
   state: () => ({
     name: '',
     token: '',
+    avatar: '' as string, // 存储基础 avatar key
+    avatarUrl: '' as string, // 存储签名URL（每小时更新）
     isLogged: false,
   }),
+
   getters: {
-    // 获取用户登录状态
     LoggedIn: (state) => state.isLogged,
-    // 获取用户名
     getUserName: (state) => state.name,
-    // 获取token
     getAccessToken: (state) => state.token,
   },
+
   actions: {
-    // 设置用户信息
-    setUserInfo(name: string, token: string) {
+    setUserInfo(name: string, token: string, avatar: string) {
       this.name = name
       this.token = token
+      this.avatar = avatar
       this.isLogged = true
 
-      // 保存到localStorage
       const { saveUserInfo } = useAuth()
-      saveUserInfo(token, name)
+      saveUserInfo(token, name, avatar)
 
-      console.log('用户登录成功:', { name, isLogged: this.isLogged })
+      console.log('用户登录成功:', { name, token, avatar })
     },
 
-    // 登出 清除用户信息
+    setAvatarUrl(url: string) {
+      this.avatarUrl = url
+    },
+
     logout() {
-      // 先清除localStorage
       const { clearUserInfo } = useAuth()
       clearUserInfo()
 
-      // 再清除store状态
       this.name = ''
       this.token = ''
+      this.avatar = ''
+      this.avatarUrl = ''
       this.isLogged = false
 
-      console.log('用户已退出登录')
+      localStorage.removeItem('avatar-url-cache')
     },
 
-    // 从localStorage恢复用户信息
     restoreUserInfo() {
-      const { userToken, userName } = useAuth()
+      const { userToken, userName, userAvatar } = useAuth()
       this.name = userName.value || ''
       this.token = userToken.value || ''
+      this.avatar = userAvatar.value || ''
       this.isLogged = !!userToken.value
 
       console.log('恢复用户状态:', {
         name: this.name,
-        hasToken: !!this.token,
+        token: this.token,
+        avatar: this.avatar,
         isLogged: this.isLogged,
       })
+    },
+
+    async refreshAvatarUrl() {
+      if (!this.avatar) return
+
+      const cached = localStorage.getItem('avatar-url-cache')
+      if (cached) {
+        try {
+          const { url, expiresAt } = JSON.parse(cached)
+          if (Date.now() < expiresAt) {
+            this.avatarUrl = url
+            return
+          }
+        } catch (e) {
+          console.warn('头像缓存解析失败:', e)
+        }
+      }
+
+      try {
+        const { useApi } = await import('~/composables/index')
+        const api = useApi()
+        const { data: response } = await api.oss.renewUrl(this.avatar)
+
+        this.avatarUrl = response.data
+        const expiresAt = Date.now() + 3600 * 1000 // 1小时有效
+
+        localStorage.setItem(
+          'avatar-url-cache',
+          JSON.stringify({
+            url: response.data,
+            expiresAt,
+          })
+        )
+      } catch (e) {
+        console.error('刷新头像签名 URL 失败:', e)
+      }
     },
   },
 })

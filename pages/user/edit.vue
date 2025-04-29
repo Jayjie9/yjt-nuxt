@@ -103,7 +103,21 @@ const onAvatarSuccess = (response, file) => {
         ElMessage.error("上传失败")
         return
     }
-    userForm.avatar = file.response.data
+    try {
+        // 获取上传返回的数据
+        const { url, fileName } = response.data
+
+        // 直接使用返回的URL显示头像
+        userForm.avatar = url
+        // 保存文件名用于后续URL续签（如果需要）
+        userForm.avatarFileName = fileName
+
+        ElMessage.success('头像更新成功')
+        // 不需要手动调用updateAvatar接口，后端会通过RabbitMQ自动更新用户头像信息
+    } catch (error) {
+        console.error('更新头像失败:', error)
+        ElMessage.error('头像更新失败，请稍后重试')
+    }
 }
 
 // 上传证件照片成功回调

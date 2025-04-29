@@ -180,11 +180,11 @@ const pwdLogin = async () => {
     const { data } = await api.loginByPassword(requestData.pwd)
     if (data.value && data.value.code === 200) {
       ElMessage.success(data.value.message || "登录成功");
-      // 存储用户信息和accessToken到store
-      jwt.saveTokens(data.value.data.accessToken)
-      userStore.setUserInfo(data.value.data.name, data.value.data.accessToken)
+      const { name, accessToken, avatar } = data.value.data
 
-      // 使用navigateTo进行路由跳转
+      jwt.saveTokens(accessToken) // JWT 单独处理
+      // 更清晰、更匹配 userAvatar 语义（avatar 是 ID，不是 URL）
+      userStore.setUserInfo(name, accessToken, avatar)
       await navigateTo('/')
     } else {
       loginState.error = data.value?.message || '登录失败，请重试';
@@ -228,7 +228,8 @@ const captchaLogin = async () => {
       ElMessage.success(data.value.message || "登录成功");
       // 存储用户信息和accessToken到store
       jwt.saveTokens(data.value.data.accessToken)
-      userStore.setUserInfo(data.value.data.name, data.value.data.accessToken)
+      userStore.setUserInfo(data.value.data.name, data.value.data.accessToken, data.value.data.avatar)
+      // 获取头像
 
       // 使用navigateTo进行路由跳转
       await navigateTo('/')
@@ -337,13 +338,6 @@ const checkLoginAttempts = (): boolean => {
   return true;
 };
 
-// 页面销毁时清除定时器
-onUnmounted(() => {
-  if (captchaTimer.interval) {
-    clearInterval(captchaTimer.interval);
-  }
-})
-
 // 导航到首页
 const goToHome = () => {
   navigateTo('/');
@@ -361,6 +355,13 @@ const forgotPassword = () => {
 
 // 动画相关
 const activeTab = ref('password');
+
+// 页面销毁时清除定时器
+onUnmounted(() => {
+  if (captchaTimer.interval) {
+    clearInterval(captchaTimer.interval);
+  }
+})
 </script>
 <template>
   <div class="login-page">

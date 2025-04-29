@@ -387,6 +387,25 @@ export const useUserApi = () => {
   }
 }
 
+export const useOssApi = () => {
+  // 上传文件
+  const uploadFile = (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return fetchPost('/api/oss/file/auth/fileUpload', formData)
+  }
+
+  // URL 续签
+  const renewUrl = (fileName: string) => {
+    return fetchGet(`/api/oss/file/auth/renew-url`, { fileName })
+  }
+
+  return {
+    uploadFile,
+    renewUrl,
+  }
+}
+
 // 导出所有API的组合函数，方便使用
 export const useApi = () => {
   return {
@@ -396,6 +415,7 @@ export const useApi = () => {
     alipay: useAlipayApi(),
     patient: usePatientApi(),
     user: useUserApi(),
+    oss: useOssApi(),
     loginBySms,
     loginByPassword,
     sendCaptcha,

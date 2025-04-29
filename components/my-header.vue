@@ -100,6 +100,8 @@ const messageInput = ref<HTMLTextAreaElement | null>(null)
 const isLoggedIn = computed(() => userStore.LoggedIn)
 /** 用户显示名称 */
 const displayName = computed(() => userStore.getUserName)
+/** 用户头像 */
+const avatarUrl = computed(() => userStore.avatarUrl)
 
 /**
  * 根据用户名生成头像背景色
@@ -316,7 +318,6 @@ async function goToAppointment() {
  * @param command 菜单命令
  */
 const handleLoginCommand = (command: string | number | object) => {
-  // 处理退出登录
   if (command === 'logout') {
     userStore.logout()
     ElMessage.info('已退出登录')
@@ -326,7 +327,6 @@ const handleLoginCommand = (command: string | number | object) => {
     }
     return
   }
-  // 处理各种导航选项
   if (command === '个人中心') {
     navigateTo('/user')
     return
@@ -339,17 +339,40 @@ const handleLoginCommand = (command: string | number | object) => {
     navigateTo('/patient')
     return
   }
-
-  // 其他选项的反馈
   if (import.meta.client) ElMessage(`点击了${command}选项`)
 }
 
-// 生命周期钩子
-/**
- * 组件挂载时恢复用户状态
- */
+
+const api = useApi()
+const getAvatarUrl = async () => {
+  // 如果没有 avatar ID，跳过
+  if (!userStore.avatar) return
+
+  const now = Date.now()
+  const expire = parseInt(localStorage.getItem('avatar-expire') || '0', 10)
+  const cachedUrl = localStorage.getItem('avatar-url')
+
+  if (cachedUrl && now < expire) {
+    userStore.setAvatarUrl(cachedUrl)
+    return
+  }
+
+  // 否则发起请求更新签名 URL
+  const { data: response } = await api.oss.renewUrl(userStore.avatar)
+
+  const avatarUrl = response.data
+  const expireTime = now + 55 * 60 * 1000 // 设置 55 分钟有效期（防止签名提前失效）
+
+  userStore.setAvatarUrl(avatarUrl)
+  localStorage.setItem('avatar-url', avatarUrl)
+  localStorage.setItem('avatar-expire', expireTime.toString())
+
+  console.log('avatarUrl:', avatarUrl)
+}
+
 onMounted(() => {
   userStore.restoreUserInfo()
+  getAvatarUrl()
 })
 </script>
 
@@ -428,7 +451,10 @@ onMounted(() => {
           <el-dropdown @command="handleLoginCommand" class="user-dropdown" trigger="click">
             <div class="user-info">
               <div class="avatar-wrapper">
-                <div class="avatar" :style="{ background: generateAvatarColor(displayName) }">
+                <div v-if="avatarUrl" class="avatar"
+                  :style="{ backgroundImage: `url(${avatarUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }">
+                </div>
+                <div v-else class="avatar" :style="{ background: generateAvatarColor(displayName) }">
                   {{ displayName.charAt(0).toUpperCase() }}
                 </div>
                 <div class="online-status"></div>

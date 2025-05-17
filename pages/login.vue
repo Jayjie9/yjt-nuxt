@@ -306,7 +306,7 @@ const resetCaptchaTimer = () => {
 
 // 第三方登录
 const thirdPartyLogin = (type: string) => {
-  ElMessage.info(`${type}登录功能正在开发中`);
+  window.location.href = 'http://localhost:8000/api/user/oauth/qq/login';
 }
 
 // 检查登录尝试次数是否超限

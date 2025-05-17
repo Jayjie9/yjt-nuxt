@@ -1,3 +1,6 @@
+// 导出疾病相关类型
+export * from './disease'
+
 export interface Hospital {
   id: string
   hoscode: string
@@ -20,12 +23,15 @@ export interface Hospital {
   }
   param: {
     hostypeString: string
+    hosLevelString: string
     fullAddress: string
   }
 }
 
 export interface HospitalQueryParams {
   hosname?: string
+  nature?: string
+  level?: string
   hostype?: string
   provinceCode?: string
   cityCode?: string

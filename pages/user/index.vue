@@ -5,6 +5,7 @@ import {
   User, Upload, Check, Calendar, Phone, Message, Setting, Lock, Document, Bell,
   House, ArrowDown, ArrowUp, Delete, Location, Star
 } from '@element-plus/icons-vue'
+import { FileType } from '~/types/common'
 
 // 导入api
 const api = useApi()
@@ -22,9 +23,11 @@ const defaultForm = {
 const userAuth = reactive({ ...defaultForm })
 const certificatesTypeList = ref([])
 const userInfo = reactive({
-  param: {},
-  avatar: ''
+  avatar: '',
+  authStatus: 0,
 })
+// 计算认证状态字符串
+const authStatusString = ref('')
 const filename = ref('')
 const submitBnt = ref('提交')
 const activeTab = ref('profile')
@@ -79,19 +82,18 @@ const getAvatarUrl = async () => {
 
 const getUserInfo = async () => {
   const { data: response } = await userInfoApi.getUserInfoDollar()
-  Object.assign(userInfo, response.data)
-
+  Object.assign(userInfo, response.data.userInfo)
+  authStatusString.value = response.data.authStatusString
+  // 如果有头像，获取头像URL
+  if (userInfo.avatar) {
+    await getAvatarUrl()
+  }
   // 获取用户信息后更新模拟数据
   if (userInfo.authStatus === 1) {
     mockUserStats.appointments = Math.floor(Math.random() * 5)
     mockUserStats.completedVisits = Math.floor(Math.random() * 3)
     mockUserStats.savedHospitals = Math.floor(Math.random() * 4) + 1
     mockUserStats.notifications = Math.floor(Math.random() * 3)
-
-    // 如果有头像，获取头像URL
-    if (userInfo.avatar) {
-      await getAvatarUrl()
-    }
   }
 }
 
@@ -170,7 +172,7 @@ const handleCertificateUpload = async (options) => {
   try {
     const { file } = options
     // 使用API中的uploadFile函数上传文件
-    const { data: response } = await api.oss.uploadFile(file)
+    const { data: response } = await api.oss.uploadFile(file, FileType.ID_CARD)
 
     if (response.code !== 200) {
       ElMessage.error('证件上传失败')
@@ -227,7 +229,7 @@ const handleAvatarUpload = async (options) => {
   try {
     const { file } = options
     // 使用API中的uploadFile函数上传文件
-    const { data: response } = await api.oss.uploadFile(file)
+    const { data: response } = await api.oss.uploadFile(file, FileType.AVATAR)
 
     if (response.code !== 200) {
       ElMessage.error('头像上传失败')
@@ -328,7 +330,7 @@ onMounted(() => {
           <div class="profile-avatar">
             <img v-if="avatarUrl" :src="avatarUrl" alt="用户头像" class="avatar-image">
             <span v-else>{{ userInfo.name ? userInfo.name.substring(0, 1) : '?' }}</span>
-            <div class="avatar-upload" v-if="userInfo.authStatus == 1">
+            <div class="avatar-upload" v-if="userInfo.authStatus == 2">
               <el-upload class="avatar-uploader" :http-request="handleAvatarUpload" :show-file-list="false"
                 :before-upload="beforeAvatarUpload">
                 <el-icon class="avatar-upload-icon">
@@ -340,15 +342,14 @@ onMounted(() => {
           <div class="profile-info">
             <h2 class="profile-name">{{ userInfo.name || '未认证用户' }}</h2>
             <div class="profile-status">
-              <el-tag :type="userInfo.authStatus == 0 ? 'warning' : 'success'" effect="light">
-                {{ userInfo.param.authStatusString || '未认证' }}
+              <el-tag :type="userInfo.authStatus > 1 ? 'success' : 'danger'" effect="light">
+                {{ authStatusString || '未认证' }}
               </el-tag>
               <span class="profile-phone">{{ userInfo.phone || '未绑定手机号' }}</span>
             </div>
           </div>
           <div class="profile-actions">
-            <el-button type="primary" plain size="small" @click="$router.push('/user/edit')"
-              v-if="userInfo.authStatus == 1">
+            <el-button type="primary" plain size="small" @click="$router.push('/user/edit')">
               <el-icon>
                 <Setting />
               </el-icon>
@@ -391,12 +392,6 @@ onMounted(() => {
           </el-icon>
           <span>健康档案</span>
         </div>
-        <div class="tab-item" :class="{ active: activeTab === 'security' }" @click="changeTab('security')">
-          <el-icon>
-            <Lock />
-          </el-icon>
-          <span>账号安全</span>
-        </div>
         <div class="tab-item" :class="{ active: activeTab === 'notifications' }" @click="changeTab('notifications')">
           <el-icon>
             <Message />
@@ -417,8 +412,8 @@ onMounted(() => {
                 </el-icon>
                 <h2 class="auth-title">实名认证</h2>
               </div>
-              <el-tag :type="userInfo.authStatus == 0 ? 'warning' : 'success'" class="auth-status">
-                {{ userInfo.param.authStatusString || '未认证' }}
+              <el-tag :type="userInfo.authStatus > 1 ? 'success' : 'warning'" class="auth-status">
+                {{ authStatusString || '未认证' }}
               </el-tag>
             </div>
           </template>
@@ -511,6 +506,77 @@ onMounted(() => {
             </el-descriptions>
           </div>
         </el-card>
+
+        <el-card class="security-card" shadow="hover">
+          <template #header>
+            <div class="section-title">
+              <el-icon>
+                <Lock />
+              </el-icon>
+              <h2 class="security-title">账号安全</h2>
+            </div>
+          </template>
+
+          <div class="security-list">
+            <div class="security-item">
+              <div class="security-info">
+                <div class="security-icon">
+                  <el-icon>
+                    <Phone />
+                  </el-icon>
+                </div>
+                <div class="security-detail">
+                  <div class="security-name">手机绑定</div>
+                  <div class="security-desc">已绑定手机：{{ userInfo.phone || '未绑定' }}</div>
+                </div>
+              </div>
+              <el-button type="primary" plain size="small">修改</el-button>
+            </div>
+            <div class="security-item">
+              <div class="security-info">
+                <div class="security-icon">
+                  <el-icon>
+                    <Lock />
+                  </el-icon>
+                </div>
+                <div class="security-detail">
+                  <div class="security-name">登录密码</div>
+                  <div class="security-desc">定期修改密码可以保护账号安全</div>
+                </div>
+              </div>
+              <el-button type="primary" plain size="small">修改</el-button>
+            </div>
+            <div class="security-item">
+              <div class="security-info">
+                <div class="security-icon">
+                  <el-icon>
+                    <Message />
+                  </el-icon>
+                </div>
+                <div class="security-detail">
+                  <div class="security-name">邮箱绑定</div>
+                  <div class="security-desc">未绑定邮箱</div>
+                </div>
+              </div>
+              <el-button type="primary" plain size="small">绑定</el-button>
+            </div>
+
+            <div class="security-item">
+              <div class="security-info">
+                <div class="security-icon">
+                  <el-icon>
+                    <Delete />
+                  </el-icon>
+                </div>
+                <div class="security-detail">
+                  <div class="security-name">注销账号</div>
+                  <div class="security-desc">销毁您的所有账号信息</div>
+                </div>
+              </div>
+              <el-button type="danger" plain size="small">注销</el-button>
+            </div>
+          </div>
+        </el-card>
       </div>
 
       <!-- 健康档案标签页内容 -->
@@ -526,7 +592,7 @@ onMounted(() => {
             </div>
           </template>
 
-          <div v-if="userInfo.authStatus == 1">
+          <div v-if="userInfo.authStatus > 1">
             <div class="favorite-content">
               <div v-if="favoriteHospitals.length > 0" class="favorite-grid">
                 <div v-for="item in displayedHospitals" :key="item.collectionId" class="favorite-item"
@@ -553,9 +619,7 @@ onMounted(() => {
 
                   <!-- 医院Logo -->
                   <div class="favorite-icon">
-                    <img v-if="item.hospital.logoData && item.hospital.logoData !== 'test'"
-                      :src="item.hospital.logoData" alt="医院logo" class="hospital-logo">
-                    <div v-else class="hospital-logo-placeholder">
+                    <div class="hospital-logo">
                       <span>{{ item.hospital.hosname.substring(0, 2) }}</span>
                     </div>
                   </div>
@@ -650,7 +714,8 @@ onMounted(() => {
 
           <div class="favorite-content">
             <div v-if="favoriteDiseases.length > 0" class="favorite-grid">
-              <div v-for="item in displayedDiseases" :key="item.collectionId" class="favorite-item disease-item">
+              <div v-for="item in displayedDiseases" :key="item.collectionId"
+                @click="$router.push(`/disease/${item.disease.discode}`)" class="favorite-item disease-item">
                 <!-- 收藏标记 -->
                 <div class="favorite-badge">
                   <el-icon color="#5e72e4">
@@ -672,21 +737,8 @@ onMounted(() => {
                 <div class="favorite-info">
                   <div class="favorite-name">{{ item.disease.name }}</div>
                   <div class="favorite-type">
-                    <el-tag size="small" effect="plain" type="info">{{ item.disease.category }}</el-tag>
-                    <el-tag size="small" effect="plain" type="danger" v-if="item.disease.riskLevel">风险等级: {{
-                      item.disease.riskLevel }}</el-tag>
-                  </div>
-                  <div class="favorite-intro" v-if="item.disease.description">
-                    <el-tooltip :content="item.disease.description" placement="top" :show-after="500">
-                      <div class="intro-text">{{ item.disease.description }}</div>
-                    </el-tooltip>
-                  </div>
-                  <div class="recommendations"
-                    v-if="item.disease.recommendations && item.disease.recommendations.length > 0">
-                    <div class="recommendation-title">建议:</div>
-                    <ul class="recommendation-list">
-                      <li v-for="(rec, index) in item.disease.recommendations" :key="index">{{ rec }}</li>
-                    </ul>
+                    <el-tag size="small" effect="plain" type="success">{{ item.disease.category.bigname }}</el-tag>
+                    <el-tag size="small" effect="plain" type="success">{{ item.disease.department.depname }}</el-tag>
                   </div>
                 </div>
               </div>
@@ -723,82 +775,7 @@ onMounted(() => {
         </el-card>
       </div>
 
-      <!-- 账号安全标签页内容 -->
-      <div v-if="activeTab === 'security'">
-        <el-card class="security-card" shadow="hover">
-          <template #header>
-            <div class="section-title">
-              <el-icon>
-                <Lock />
-              </el-icon>
-              <h2 class="security-title">账号安全</h2>
-            </div>
-          </template>
-
-          <div class="security-list">
-            <div class="security-item">
-              <div class="security-info">
-                <div class="security-icon">
-                  <el-icon>
-                    <Phone />
-                  </el-icon>
-                </div>
-                <div class="security-detail">
-                  <div class="security-name">手机绑定</div>
-                  <div class="security-desc">已绑定手机：{{ userInfo.phone || '未绑定' }}</div>
-                </div>
-              </div>
-              <el-button type="primary" plain size="small">修改</el-button>
-            </div>
-            <div class="security-item">
-              <div class="security-info">
-                <div class="security-icon">
-                  <el-icon>
-                    <Lock />
-                  </el-icon>
-                </div>
-                <div class="security-detail">
-                  <div class="security-name">登录密码</div>
-                  <div class="security-desc">定期修改密码可以保护账号安全</div>
-                </div>
-              </div>
-              <el-button type="primary" plain size="small">修改</el-button>
-            </div>
-            <div class="security-item">
-              <div class="security-info">
-                <div class="security-icon">
-                  <el-icon>
-                    <Message />
-                  </el-icon>
-                </div>
-                <div class="security-detail">
-                  <div class="security-name">邮箱绑定</div>
-                  <div class="security-desc">未绑定邮箱</div>
-                </div>
-              </div>
-              <el-button type="primary" plain size="small">绑定</el-button>
-            </div>
-
-            <div class="security-item">
-              <div class="security-info">
-                <div class="security-icon">
-                  <el-icon>
-                    <Delete />
-                  </el-icon>
-                </div>
-                <div class="security-detail">
-                  <div class="security-name">注销账号</div>
-                  <div class="security-desc">销毁您的所有账号信息</div>
-                </div>
-              </div>
-              <el-button type="danger" plain size="small">注销</el-button>
-            </div>
-          </div>
-        </el-card>
-      </div>
-
-      <!-- 就诊记录标签页内容 -->
-
+      <!-- 消息通知标签页内容 -->
       <div v-if="activeTab === 'notifications'">
         <el-card class="notification-card" shadow="hover">
           <template #header>
@@ -1306,23 +1283,6 @@ onMounted(() => {
   text-align: center;
 }
 
-.recommendations {
-  margin-top: 10px;
-}
-
-.recommendation-title {
-  font-weight: 500;
-  margin-bottom: 5px;
-  color: var(--el-text-color-secondary);
-}
-
-.recommendation-list {
-  padding-left: 20px;
-  margin: 0;
-  font-size: 13px;
-  color: var(--el-text-color-regular);
-}
-
 /* 收藏标记 */
 .favorite-badge {
   position: absolute;
@@ -1357,16 +1317,8 @@ onMounted(() => {
   color: #42b983;
 }
 
-.hospital-logo {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
 
-.hospital-logo-placeholder {
+.hospital-logo {
   width: 80px;
   height: 80px;
   border-radius: 50%;
@@ -1545,6 +1497,13 @@ onMounted(() => {
 }
 
 /* 安全设置 */
+.security-card {
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: none;
+}
+
 .security-list {
   display: flex;
   flex-direction: column;

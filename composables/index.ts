@@ -17,6 +17,8 @@ import {
   fetchDelete,
 } from './useDollarFetchHttp'
 
+import { FileType } from '~/types/common'
+
 interface UserLoginData {
   phone: string
   code: string
@@ -72,6 +74,11 @@ export const loginBySms = (data: UserLoginData) => {
 
 export const loginByPassword = (data: UserPwdLoginData) => {
   return useFetchPost('/api/user/pwdLogin', data)
+}
+
+// qq 登录
+export const qqLogin = () => {
+  return useFetchGet('/api/user/oauth/qq/login')
 }
 
 // 测试接口
@@ -181,6 +188,29 @@ export const useHospitalApi = () => {
   }
 }
 
+export const useDiseaseApi = () => {
+  // 根据discode获取疾病信息
+  const getDiseaseInfoByDiscodeDollar = (discode: string) => {
+    return fetchGet(`/api/disease/info/${discode}`)
+  }
+
+  // 根据疾病名称关键字搜索疾病列表
+  const searchDiseaseByKeyword = (name: string) => {
+    return fetchGet(`/api/disease/search/${name}`)
+  }
+
+  // 症状分析功能API
+  const symptomAnalysis = (keyword: any) => {
+    return fetchGet(`/api/disease//analysis/${keyword}`, keyword)
+  }
+
+  return {
+    getDiseaseInfoByDiscodeDollar,
+    searchDiseaseByKeyword,
+    symptomAnalysis,
+  }
+}
+
 // 字典接口
 export const useDictionaryApi = () => {
   // 根据dictCode获取下级节点
@@ -201,11 +231,22 @@ export const useDictionaryApi = () => {
     return fetchGet(`/api/cmn/dict/findByDictCode/${dictCode}`)
   }
 
+  // 通过dictcode获取DictDisease
+  const findDictDiseaseByDictCodeDollar = (dictCode: string) => {
+    return fetchGet(`/api/cmn/dictDisease/findByDictCode/${dictCode}`)
+  }
+
+  const findDictChildDataDollar = (id: string) => {
+    return fetchGet(`/api/cmn/dictDisease/findChildData/${id}`)
+  }
+
   return {
     findByDictCode,
     findByParentId,
     findByDictCodeDollar,
     findByParentIdDollar,
+    findDictDiseaseByDictCodeDollar,
+    findDictChildDataDollar,
   }
 }
 
@@ -356,6 +397,11 @@ export const useUserApi = () => {
     return fetchGet(`/api/user/auth/getUserInfo`)
   }
 
+  // 修改用户信息接口
+  const updateUserInfo = (userInfo: any) => {
+    return fetchPut(`/api/user/auth/modify`, userInfo)
+  }
+
   // 获取用户收藏
   const getUserCollectDollar = () => {
     return fetchGet(`/api/user/collect/auth/getAll`)
@@ -380,6 +426,7 @@ export const useUserApi = () => {
     saveUserAuth,
     getUserInfo,
     getUserInfoDollar,
+    updateUserInfo,
     getUserCollectDollar,
     isCollectedDollar,
     addCollectDollar,
@@ -389,9 +436,10 @@ export const useUserApi = () => {
 
 export const useOssApi = () => {
   // 上传文件
-  const uploadFile = (file: File) => {
+  const uploadFile = (file: File, fileType: FileType) => {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('fileType', fileType)
     return fetchPost('/api/oss/file/auth/fileUpload', formData)
   }
 
@@ -410,6 +458,7 @@ export const useOssApi = () => {
 export const useApi = () => {
   return {
     hospital: useHospitalApi(),
+    disease: useDiseaseApi(),
     dictionary: useDictionaryApi(),
     order: useOrderApi(),
     alipay: useAlipayApi(),

@@ -309,9 +309,6 @@ async function goToAnalysisIllness() {
   navigateTo('/disease')
 }
 
-async function goToAppointment() {
-  navigateTo('/')
-}
 
 /**
  * 处理用户下拉菜单命令
@@ -391,25 +388,19 @@ onMounted(() => {
           <el-icon>
             <House />
           </el-icon>
-          <span>首页</span>
+          <span>找医院</span>
         </div>
         <div class="nav-item v-link" @click="goToAnalysisIllness">
           <el-icon>
             <Location />
           </el-icon>
-          <span>病症分析</span>
-        </div>
-        <div class="nav-item v-link" @click="goToAppointment">
-          <el-icon>
-            <Calendar />
-          </el-icon>
-          <span>预约挂号</span>
+          <span>查病情</span>
         </div>
         <div class="nav-item v-link" @click="goToHelp">
           <el-icon>
             <QuestionFilled />
           </el-icon>
-          <span>帮助中心</span>
+          <span>需帮助</span>
         </div>
       </div>
 

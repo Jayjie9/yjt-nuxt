@@ -4,9 +4,8 @@ import { Search, ChatDotRound, ArrowRight, View, Share, Star, Location, Calendar
 import { useApi } from '~/composables'
 
 // 导入API
-const api = useApi()
-const diseaseApi = api.disease
-const analysisApi = api.analysis
+const dictionary = useApi().dictionary
+const disease = useApi().disease
 
 // 搜索相关
 const searchQuery = ref('')
@@ -28,94 +27,188 @@ const symptomInput = ref('')
 const analysisResult = ref(null)
 const analysisHistory = ref([])
 const showHistory = ref(false)
-const historyPagination = ref({
-    total: 0,
-    page: 1,
-    limit: 5,
-    pages: 0
-})
+
 
 // 症状标签
 const commonSymptoms = ref([])
-
 // 选中的症状标签
 const selectedSymptoms = ref([])
 
-// 常见疾病分类
-const diseaseCategories = ref([
-    { id: 1, name: '内科', icon: 'internal-medicine.svg', color: '#4a9cd8' },
-    { id: 2, name: '外科', icon: 'surgery.svg', color: '#42b983' },
-    { id: 3, name: '妇产科', icon: 'gynecology.svg', color: '#f56c6c' },
-    { id: 4, name: '儿科', icon: 'pediatrics.svg', color: '#e6a23c' },
-    { id: 5, name: '皮肤科', icon: 'dermatology.svg', color: '#9254de' },
-    { id: 6, name: '眼科', icon: 'ophthalmology.svg', color: '#1989fa' },
-    { id: 7, name: '耳鼻喉科', icon: 'ent.svg', color: '#ff9900' },
-    { id: 8, name: '口腔科', icon: 'dental.svg', color: '#13c2c2' }
-])
+// 疾病列表
+const diseaseCategories = ref([])
+const diseaseDep = ref([])
+const diseaseList = ref([])
+const loadingDiseaseList = ref(false)
+const selectedDepartment = ref(null)
 
-// 热门疾病
-const popularDiseases = ref([
-    { id: 1, name: '高血压', category: '内科', views: 12500, bookmarks: 3200 },
-    { id: 2, name: '糖尿病', category: '内科', views: 10800, bookmarks: 2800 },
-    { id: 3, name: '感冒', category: '内科', views: 9600, bookmarks: 1500 },
-    { id: 4, name: '肺炎', category: '内科', views: 8900, bookmarks: 2100 },
-    { id: 5, name: '骨折', category: '外科', views: 7500, bookmarks: 1800 },
-    { id: 6, name: '阑尾炎', category: '外科', views: 6800, bookmarks: 1600 }
-])
+// 当前选中的大科室
+const selectedBigDepartment = ref(null)
 
-// 季节性疾病
-const seasonalDiseases = ref([
-    { id: 1, name: '流感', season: '冬季', description: '流行性感冒是由流感病毒引起的急性呼吸道传染病' },
-    { id: 2, name: '过敏性鼻炎', season: '春季', description: '过敏性鼻炎是鼻腔黏膜的变态反应性疾病' },
-    { id: 3, name: '中暑', season: '夏季', description: '中暑是指人体在高温环境下，体温调节功能失调' },
-    { id: 4, name: '手足口病', season: '夏季', description: '手足口病是由肠道病毒引起的传染病' }
-])
+// 分页配置
+const pagination = reactive({
+    currentPage: 1,
+    pageSize: 12,
+    total: 0
+})
 
-// 健康资讯
-const healthArticles = ref([
-    {
-        id: 1,
-        title: '如何预防心血管疾病',
-        summary: '心血管疾病是当今世界的主要死亡原因之一，本文介绍预防心血管疾病的方法。',
-        date: '2023-05-15',
-        image: '~assets/images/logo.png'
-    },
-    {
-        id: 2,
-        title: '糖尿病患者的饮食指南',
-        summary: '合理的饮食控制对糖尿病患者至关重要，本文提供详细的饮食建议。',
-        date: '2023-05-10',
-        image: '~assets/images/logo.png'
-    },
-    {
-        id: 3,
-        title: '儿童常见传染病预防',
-        summary: '了解儿童常见传染病的预防措施，保护孩子健康成长。',
-        date: '2023-05-05',
-        image: '~assets/images/logo.png'
+// 获取大科室分类
+const fetchDiseaseCategories = async () => {
+    try {
+        const { data } = await dictionary.findDictDiseaseByDictCodeDollar('BigDep')
+        diseaseCategories.value = data.data
+
+        // 恢复之前选择的科室状态
+        restorePreviousState()
+    } catch (error) {
+        console.error('获取疾病分类失败:', error)
     }
-])
+}
 
-// 搜索疾病
-const searchDisease = () => {
-    if (!searchQuery.value.trim()) return
+// 处理大科室选择
+const handleDepartmentSelect = async (category) => {
+    // 如果点击的是已选中的大科室，则取消选择
+    if (selectedBigDepartment.value && selectedBigDepartment.value.id === category.id) {
+        selectedBigDepartment.value = null
+        diseaseDep.value = []
+        selectedDepartment.value = null
+        return
+    }
 
-    isSearching.value = true
+    selectedBigDepartment.value = category
+    selectedDepartment.value = category.name
 
-    // 模拟API调用
-    setTimeout(() => {
-        // 这里应该是实际的API调用
-        // const { data } = await diseaseApi.searchDisease(searchQuery.value)
+    try {
+        const { data: response } = await dictionary.findDictChildDataDollar(category.id)
+        diseaseDep.value = response.data || []
+        console.log('子科室数据:', diseaseDep.value)
+    } catch (error) {
+        console.error('获取子科室失败:', error)
+        diseaseDep.value = []
+    }
+}
 
-        // 模拟数据
-        searchResults.value = [
-            { id: 1, name: '高血压', category: '内科', description: '高血压是指体循环动脉血压（收缩压和/或舒张压）增高...' },
-            { id: 2, name: '高血脂', category: '内科', description: '高血脂是指血液中脂质含量过高的状态，主要包括胆固醇...' },
-            { id: 3, name: '高尿酸血症', category: '内科', description: '高尿酸血症是指人体内嘌呤代谢紊乱导致的血尿酸水平升高...' }
-        ].filter(item => item.name.includes(searchQuery.value) || item.description.includes(searchQuery.value))
+// 加载疾病列表
+const loadDiseaseList = async () => {
+    loadingDiseaseList.value = true
+    try {
+        // 根据选中的科室ID查询疾病列表
+        const departmentId = selectedDepartment.value ?
+            diseaseDep.value.find(dep => dep.name === selectedDepartment.value)?.id :
+            (selectedBigDepartment.value?.value || '')
 
-        isSearching.value = false
-    }, 500)
+        if (!departmentId) {
+            diseaseList.value = []
+            pagination.total = 0
+            loadingDiseaseList.value = false
+            return
+        }
+
+        // 获取疾病列表
+        const { data: response } = await dictionary.findDictChildDataDollar(departmentId)
+        if (response && response.data) {
+            // 转换后端返回的数据格式为前端需要的格式
+            diseaseList.value = response.data.map(item => ({
+                _id: item.id,
+                name: item.name,
+                value: item.value,
+                category: selectedBigDepartment.value?.name || '未分类',
+                department: selectedDepartment.value || selectedBigDepartment.value?.name || '未知科室',
+                tags: [item.value.split('_')[0]],
+                description: '暂无描述'
+            }))
+            pagination.total = diseaseList.value.length
+        } else {
+            diseaseList.value = []
+            pagination.total = 0
+        }
+    } catch (error) {
+        console.error('获取疾病列表失败:', error)
+        diseaseList.value = []
+        pagination.total = 0
+    } finally {
+        loadingDiseaseList.value = false
+    }
+}
+
+// 处理子科室选择
+const handleSubDepartmentSelect = (subDepartment) => {
+    selectedDepartment.value = subDepartment.name
+    loadDiseaseList()
+}
+
+// 跳转到疾病详情页
+const navigateToDisease = (disease) => {
+    // 保存疾病信息到本地存储，以便在详情页使用
+    localStorage.setItem('selectedDisease', JSON.stringify(disease))
+    // 保存当前选中的科室信息，以便返回时恢复状态
+    if (selectedBigDepartment.value) {
+        localStorage.setItem('selectedBigDepartment', JSON.stringify(selectedBigDepartment.value))
+    }
+    if (selectedDepartment.value) {
+        localStorage.setItem('selectedDepartment', selectedDepartment.value)
+    }
+    if (diseaseDep.value.length > 0) {
+        localStorage.setItem('diseaseDep', JSON.stringify(diseaseDep.value))
+    }
+    // 这里的 disease.value = discode
+    navigateTo(`/disease/${disease.value}`)
+}
+
+// 搜索疾病相关变量
+const timeout = ref(null)
+const diseaseSearchResults = ref([])
+
+// 搜索疾病建议
+const querySearchDiseaseAsync = (queryString, cb) => {
+    if (!queryString) {
+        cb([])
+        return
+    }
+    clearTimeout(timeout.value)
+    timeout.value = setTimeout(async () => {
+        try {
+            const { data } = await disease.searchDiseaseByKeyword(queryString)
+            let results = []
+
+            if (data.data && Array.isArray(data.data)) {
+                diseaseSearchResults.value = data.data
+                results = diseaseSearchResults.value.filter(item =>
+                    item.name.toLowerCase().indexOf(queryString.toLowerCase()) === 0 ||
+                    (item.description && item.description.toLowerCase().indexOf(queryString.toLowerCase()) !== -1)
+                )
+            } else {
+                console.warn('搜索返回的数据结构不符合预期:', data)
+            }
+
+            // 返回搜索结果
+            cb(results)
+        } catch (error) {
+            console.error('搜索疾病失败:', error)
+            cb([])
+        }
+    }, 800)
+}
+
+// 处理疾病选择
+const handleDiseaseSelect = (item) => {
+    // 如果选择了搜索结果，直接跳转到疾病详情页
+    viewDiseaseDetail(item)
+}
+
+// 查看疾病详情
+const viewDiseaseDetail = (disease) => {
+    // 检查疾病对象是否有 value 属性，如果没有，可能是从搜索结果中选择的
+    const diseaseCode = disease.value || disease.id
+    if (!diseaseCode) {
+        console.error('无效的疾病数据:', disease)
+        return
+    }
+
+    // 保存疾病信息到本地存储，以便在详情页使用
+    localStorage.setItem('selectedDisease', JSON.stringify(disease))
+
+    // 跳转到疾病详情页
+    navigateTo(`/disease/${diseaseCode}`)
 }
 
 // 发送AI消息
@@ -171,87 +264,55 @@ const clearSymptoms = () => {
 }
 
 // 提交病情分析
-const submitAnalysis = () => {
+const submitAnalysis = async () => {
     if (!symptomInput.value.trim()) return
 
     analysisLoading.value = true
     analysisResult.value = null
 
-    // 模拟API调用
-    setTimeout(() => {
-        // 这里应该是实际的API调用
-        // const { data } = await analysisApi.analyzeSymptoms(symptomInput.value)
+    const { data } = await disease.symptomAnalysis(symptomInput.value)
 
-        // 模拟分析结果
-        const symptoms = symptomInput.value
-        let result = {
-            id: Date.now(),
-            date: new Date().toISOString(),
-            symptoms: symptoms,
-            possibleDiseases: [],
-            recommendations: [],
-            riskLevel: ''
+    // 模拟分析结果
+    const symptoms = symptomInput.value
+    let result = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        symptoms: symptoms,
+        possibleDiseases: [],
+        recommendations: [],
+        riskLevel: ''
+    }
+
+    if (symptoms.includes('头痛')) {
+        result.possibleDiseases.push(
+            { name: '偏头痛', probability: 0.75, description: '偏头痛是一种常见的神经血管性疾病，特点是反复发作的中重度、搏动性头痛。' },
+            { name: '紧张性头痛', probability: 0.65, description: '紧张性头痛是最常见的头痛类型，通常表现为双侧头部的紧绷或压迫感。' }
+        )
+        result.riskLevel = '中等'
+    }
+
+    // 如果没有匹配到特定疾病
+    if (result.possibleDiseases.length === 0) {
+        result.possibleDiseases.push(
+            { name: '未能确定', probability: 0, description: '根据提供的症状无法确定可能的疾病。' }
+        )
+        result.riskLevel = '未知'
+    }
+
+    // 添加通用建议
+    if (result.recommendations.length === 0) {
+        if (result.riskLevel === '高') {
+            result.recommendations.push('建议立即就医')
+        } else if (result.riskLevel === '中等') {
+            result.recommendations.push('建议近期就医', '保持充分休息', '多饮水')
+        } else {
+            result.recommendations.push('观察症状变化', '如症状加重请及时就医')
         }
-
-        if (symptoms.includes('头痛')) {
-            result.possibleDiseases.push(
-                { name: '偏头痛', probability: 0.75, description: '偏头痛是一种常见的神经血管性疾病，特点是反复发作的中重度、搏动性头痛。' },
-                { name: '紧张性头痛', probability: 0.65, description: '紧张性头痛是最常见的头痛类型，通常表现为双侧头部的紧绷或压迫感。' }
-            )
-            result.riskLevel = '中等'
-        }
-
-        if (symptoms.includes('发热') || symptoms.includes('发烧')) {
-            result.possibleDiseases.push(
-                { name: '上呼吸道感染', probability: 0.85, description: '上呼吸道感染是指鼻、咽、喉等上呼吸道的急性炎症。' },
-                { name: '流感', probability: 0.7, description: '流感是由流感病毒引起的急性呼吸道传染病。' }
-            )
-            result.riskLevel = '中等'
-        }
-
-        if (symptoms.includes('咳嗽')) {
-            result.possibleDiseases.push(
-                { name: '支气管炎', probability: 0.8, description: '支气管炎是支气管黏膜的炎症，可由感染或非感染因素引起。' },
-                { name: '肺炎', probability: 0.4, description: '肺炎是肺部实质的炎症，通常由感染引起。' }
-            )
-            result.riskLevel = '中等'
-        }
-
-        if (symptoms.includes('胸痛') && symptoms.includes('呼吸困难')) {
-            result.possibleDiseases.push(
-                { name: '冠心病', probability: 0.6, description: '冠心病是由冠状动脉狭窄或阻塞引起的心脏疾病。' },
-                { name: '肺栓塞', probability: 0.3, description: '肺栓塞是由血栓阻塞肺动脉或其分支引起的疾病。' }
-            )
-            result.riskLevel = '高'
-            result.recommendations.push('请立即就医！')
-        }
-
-        // 如果没有匹配到特定疾病
-        if (result.possibleDiseases.length === 0) {
-            result.possibleDiseases.push(
-                { name: '未能确定', probability: 0, description: '根据提供的症状无法确定可能的疾病。' }
-            )
-            result.riskLevel = '未知'
-        }
-
-        // 添加通用建议
-        if (result.recommendations.length === 0) {
-            if (result.riskLevel === '高') {
-                result.recommendations.push('建议立即就医')
-            } else if (result.riskLevel === '中等') {
-                result.recommendations.push('建议近期就医', '保持充分休息', '多饮水')
-            } else {
-                result.recommendations.push('观察症状变化', '如症状加重请及时就医')
-            }
-        }
-
-        analysisResult.value = result
-
-        // 添加到历史记录
-        analysisHistory.value.unshift(result)
-
-        analysisLoading.value = false
-    }, 1500)
+    }
+    analysisResult.value = result
+    // 添加到历史记录
+    analysisHistory.value.unshift(result)
+    analysisLoading.value = false
 }
 
 // 查看历史分析记录
@@ -271,30 +332,37 @@ const formatDate = (dateString) => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-// 选择疾病分类
-const selectCategory = (category) => {
-    console.log('选择疾病分类:', category.name)
-    // 这里应该是实际的分类跳转逻辑
-    // router.push(`/disease/category/${category.id}`)
-}
+// 恢复之前的选择状态
+const restorePreviousState = () => {
+    try {
+        // 恢复大科室选择
+        const savedBigDepartment = localStorage.getItem('selectedBigDepartment')
+        if (savedBigDepartment) {
+            const parsedBigDepartment = JSON.parse(savedBigDepartment)
+            // 确保在当前科室列表中找到对应的科室
+            selectedBigDepartment.value = diseaseCategories.value.find(cat => cat.id === parsedBigDepartment.id) || null
+        }
 
-// 查看疾病详情
-const viewDiseaseDetail = (disease) => {
-    console.log('查看疾病详情:', disease.name)
-    // 这里应该是实际的详情页跳转逻辑
-    // router.push(`/disease/detail/${disease.id}`)
-}
+        // 恢复子科室列表
+        const savedDiseaseDep = localStorage.getItem('diseaseDep')
+        if (savedDiseaseDep) {
+            diseaseDep.value = JSON.parse(savedDiseaseDep)
+        }
 
-// 查看健康资讯
-const viewArticle = (article) => {
-    console.log('查看健康资讯:', article.title)
-    // 这里应该是实际的文章页跳转逻辑
-    // router.push(`/article/${article.id}`)
+        // 恢复选中的科室
+        const savedDepartment = localStorage.getItem('selectedDepartment')
+        if (savedDepartment) {
+            selectedDepartment.value = savedDepartment
+            // 加载疾病列表
+            loadDiseaseList()
+        }
+    } catch (error) {
+        console.error('恢复选择状态失败:', error)
+    }
 }
-
 onMounted(() => {
-    // 初始化数据
-    // 这里可以添加实际的API调用
+    fetchDiseaseCategories() // 获取大科室分类
+    loadDiseaseList() // 初始加载疾病列表
 
     // 获取历史分析记录
     // const fetchAnalysisHistory = async () => {
@@ -319,19 +387,21 @@ onMounted(() => {
 
                 <!-- 搜索框 -->
                 <div class="search-container">
-                    <el-input v-model="searchQuery" placeholder="搜索疾病、症状或健康问题" class="search-input"
-                        @keyup.enter="searchDisease">
+                    <el-autocomplete class="disease-search-input" v-model="searchQuery"
+                        :fetch-suggestions="querySearchDiseaseAsync" placeholder="搜索疾病、症状或健康问题"
+                        @select="handleDiseaseSelect" :trigger-on-focus="true" highlight-first-item fit-input-width>
                         <template #prefix>
-                            <el-icon class="search-icon">
+                            <el-icon>
                                 <Search />
                             </el-icon>
                         </template>
-                        <template #append>
-                            <el-button @click="searchDisease">
-                                搜索
-                            </el-button>
+                        <template #default="{ item }">
+                            <div class="suggestion-item">
+                                <span class="suggestion-name">{{ item.name }}</span>
+                                <el-tag size="small" effect="plain" type="info">{{ item.category }}</el-tag>
+                            </div>
                         </template>
-                    </el-input>
+                    </el-autocomplete>
                 </div>
             </div>
         </div>
@@ -370,16 +440,17 @@ onMounted(() => {
                 </el-card>
             </div>
 
-            <!-- AI问诊和病情分析入口 -->
+            <!-- 智能问诊和病情分析入口 -->
+            <!-- <MedicalChat /> -->
             <el-row :gutter="20" class="diagnosis-section">
-                <!-- AI问诊入口 -->
+                <!-- 智能问诊入口 -->
                 <el-col :xs="24" :sm="24" :md="12">
                     <el-card class="ai-card" shadow="hover">
                         <div class="ai-content">
                             <div class="ai-info">
-                                <h2 class="ai-title">AI智能问诊</h2>
+                                <h2 class="ai-title">智能问诊</h2>
                                 <p class="ai-description">
-                                    描述您的症状，AI助手将为您提供初步诊断建议和就医指导。
+                                    描述您的症状，智能助手将为您提供初步诊断建议和就医指导。
                                     <span class="ai-note">（仅供参考，不能替代医生诊断）</span>
                                 </p>
                                 <el-button type="primary" @click="aiDialogVisible = true" class="ai-button">
@@ -421,124 +492,90 @@ onMounted(() => {
                 </el-col>
             </el-row>
 
-            <!-- 疾病分类 -->
+            <!-- 疾病大科室分类 -->
             <div class="disease-categories-section">
-                <h2 class="section-title">疾病分类</h2>
-                <div class="categories-grid">
+                <h2 class="section-title">疾病大科室分类</h2>
+
+                <!-- 加载动画 -->
+                <div v-if="diseaseCategories.length === 0" class="categories-loading">
+                    <div class="loading-spinner">
+                        <svg class="circular" viewBox="25 25 50 50">
+                            <circle class="path" cx="50" cy="50" r="20" fill="none" stroke-width="5"
+                                stroke-miterlimit="10" />
+                        </svg>
+                    </div>
+                    <p class="loading-text">正在加载科室分类...</p>
+                </div>
+
+                <div v-else class="categories-grid">
                     <div v-for="category in diseaseCategories" :key="category.id" class="category-item"
-                        @click="selectCategory(category)">
-                        <div class="category-icon"
-                            :style="{ backgroundColor: category.color + '15', borderColor: category.color }">
-                            <img :src="`/images/icons/${category.icon}`" :alt="category.name" />
+                        :class="{ 'active': selectedBigDepartment && selectedBigDepartment.id === category.id }"
+                        @click="handleDepartmentSelect(category)">
+                        <div class="category-icon">
+                            <el-icon>
+                                <Location />
+                            </el-icon>
                         </div>
                         <div class="category-name">{{ category.name }}</div>
+                        <div class="category-indicator"
+                            v-if="selectedBigDepartment && selectedBigDepartment.id === category.id">
+                            <el-icon>
+                                <ArrowRight />
+                            </el-icon>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 热门疾病 -->
-            <div class="popular-diseases-section">
-                <div class="section-header">
-                    <h2 class="section-title">热门疾病</h2>
-                    <el-button text type="primary">
-                        查看更多
-                        <el-icon>
-                            <ArrowRight />
-                        </el-icon>
-                    </el-button>
-                </div>
-
-                <el-row :gutter="20">
-                    <el-col :xs="24" :sm="12" :md="8" v-for="disease in popularDiseases" :key="disease.id">
-                        <el-card class="disease-card" shadow="hover" @click="viewDiseaseDetail(disease)">
-                            <div class="disease-card-content">
-                                <h3 class="disease-name">{{ disease.name }}</h3>
-                                <el-tag size="small" effect="plain">{{ disease.category }}</el-tag>
-                                <div class="disease-stats">
-                                    <div class="stat-item">
-                                        <el-icon>
-                                            <View />
-                                        </el-icon>
-                                        <span>{{ disease.views }}</span>
-                                    </div>
-                                    <div class="stat-item">
-                                        <el-icon>
-                                            <Star />
-                                        </el-icon>
-                                        <span>{{ disease.bookmarks }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </el-card>
-                    </el-col>
-                </el-row>
-            </div>
-
-            <!-- 季节性疾病 -->
-            <div class="seasonal-diseases-section">
-                <div class="section-header">
-                    <h2 class="section-title">季节性疾病</h2>
-                    <el-button text type="primary">
-                        查看更多
-                        <el-icon>
-                            <ArrowRight />
-                        </el-icon>
-                    </el-button>
-                </div>
-
-                <el-carousel :interval="5000" type="card" height="200px">
-                    <el-carousel-item v-for="disease in seasonalDiseases" :key="disease.id">
-                        <div class="seasonal-disease-card">
-                            <div class="seasonal-tag">{{ disease.season }}</div>
-                            <h3 class="seasonal-name">{{ disease.name }}</h3>
-                            <p class="seasonal-description">{{ disease.description }}</p>
-                            <el-button text type="primary" @click="viewDiseaseDetail(disease)">
-                                了解更多
+                <!-- 子科室列表 -->
+                <transition name="slide-fade">
+                    <div v-if="diseaseDep.length > 0" class="sub-departments-container">
+                        <div class="sub-departments-header">
+                            <span class="sub-departments-title">{{ selectedBigDepartment ? selectedBigDepartment.name :
+                                '' }}
+                                子科室</span>
+                            <el-divider>
                                 <el-icon>
-                                    <ArrowRight />
+                                    <Location />
                                 </el-icon>
-                            </el-button>
+                            </el-divider>
                         </div>
-                    </el-carousel-item>
-                </el-carousel>
+                        <div class="sub-departments-list">
+                            <div v-for="subDep in diseaseDep" :key="subDep.id" class="sub-department-item"
+                                :class="{ 'active': selectedDepartment === subDep.name }"
+                                @click="handleSubDepartmentSelect(subDep)">
+                                <el-icon class="sub-dep-icon">
+                                    <View />
+                                </el-icon>
+                                <span class="sub-dep-name">{{ subDep.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </transition>
             </div>
 
-            <!-- 健康资讯 -->
-            <div class="health-articles-section">
-                <div class="section-header">
-                    <h2 class="section-title">健康资讯</h2>
-                    <el-button text type="primary">
-                        查看更多
-                        <el-icon>
-                            <ArrowRight />
-                        </el-icon>
-                    </el-button>
+            <!-- 疾病列表 -->
+            <div class="disease-list-section">
+                <h2 class="section-title">{{ selectedDepartment ? selectedDepartment + ' - ' : '' }}疾病列表</h2>
+                <div v-if="loadingDiseaseList" class="loading-placeholder">
+                    <el-skeleton :rows="6" animated />
                 </div>
-
-                <el-row :gutter="20">
-                    <el-col :xs="24" :sm="24" :md="8" v-for="article in healthArticles" :key="article.id">
-                        <el-card class="article-card" shadow="hover" @click="viewArticle(article)">
-                            <div class="article-image">
-                                <img :src="article.image" :alt="article.title" />
-                            </div>
-                            <div class="article-content">
-                                <h3 class="article-title">{{ article.title }}</h3>
-                                <p class="article-summary">{{ article.summary }}</p>
-                                <div class="article-footer">
-                                    <span class="article-date">
-                                        <el-icon>
-                                            <Calendar />
-                                        </el-icon>
-                                        {{ article.date }}
-                                    </span>
-                                    <el-button text type="primary" size="small">
-                                        阅读全文
-                                    </el-button>
+                <div v-else-if="diseaseList.length === 0 && selectedDepartment" class="empty-placeholder">
+                    <el-empty :description="`暂无${selectedDepartment}相关疾病信息`" />
+                </div>
+                <div v-else-if="diseaseList.length === 0 && !selectedDepartment" class="empty-placeholder">
+                    <el-empty description="请先选择一个科室查看疾病列表" />
+                </div>
+                <div v-else>
+                    <el-row :gutter="20">
+                        <el-col v-for="disease in diseaseList" :key="disease._id" :xs="24" :sm="12" :md="8" :lg="6">
+                            <el-card class="disease-card" shadow="hover" @click="navigateToDisease(disease)">
+                                <div class="disease-card-simple">
+                                    <span class="disease-name-title">{{ disease.name }}</span>
                                 </div>
-                            </div>
-                        </el-card>
-                    </el-col>
-                </el-row>
+                            </el-card>
+                        </el-col>
+                    </el-row>
+                </div>
             </div>
         </div>
 
@@ -728,229 +765,172 @@ onMounted(() => {
 <style scoped>
 @import '@/assets/css/common.css';
 @import '@/assets/css/components/search.css';
+@import '@/assets/css/pages/disease/index.css';
 
-/* 页面头部 */
-.page-header {
-    padding: 60px 0 80px 0;
-    margin-bottom: 20px;
+/* 搜索框样式 */
+.search-container {
+    max-width: 600px;
+    margin: 0 auto 20px;
 }
 
-.header-content {
-    padding: 0 20px;
+.disease-search-input {
+    width: 100%;
 }
 
-.header-subtitle {
-    font-size: 1.1rem;
+.search-icon {
+    color: var(--el-color-primary);
 }
 
-/* 主内容区域 */
-.main-content {
-    max-width: 1000px;
-}
-
-/* 搜索结果 */
-.result-content {
-    margin-bottom: 10px;
-}
-
-.result-action {
+.suggestion-item {
     display: flex;
-    justify-content: flex-end;
-}
-
-/* 病情分析相关样式 */
-.diagnosis-section {
-    margin-bottom: 30px;
-}
-
-/* AI问诊和病情分析卡片共享样式 */
-.ai-card,
-.analysis-card {
-    height: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-    transition: all 0.3s;
-}
-
-.ai-card:hover,
-.analysis-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    transform: translateY(-5px);
-}
-
-/* 卡片样式 */
-.ai-card {
-    background: linear-gradient(to right bottom, #f0f9ff, #e6f7ff);
-}
-
-.analysis-card {
-    background: linear-gradient(to right bottom, #f0fff4, #e6ffec);
-}
-
-/* AI问诊和病情分析内容共享样式 */
-.ai-content,
-.analysis-content {
-    display: flex;
-    padding: 20px;
-}
-
-.ai-info,
-.analysis-info {
-    flex: 1;
-}
-
-.ai-title,
-.analysis-title {
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-    color: #2c3e50;
-}
-
-.ai-description,
-.analysis-description {
-    color: #5a6a7e;
-    margin-bottom: 20px;
-    line-height: 1.5;
-}
-
-.ai-note,
-.analysis-note {
-    font-size: 0.85rem;
-    color: #95a5a6;
-}
-
-.ai-button,
-.analysis-button {
-    margin-top: 10px;
-}
-
-.ai-image,
-.analysis-image {
-    width: 120px;
-    display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
+    padding: 5px 0;
 }
 
-.ai-image img,
-.analysis-image img {
-    max-width: 100%;
-    height: auto;
-}
-
-/* AI问诊部分 */
-.ai-diagnosis-section {
-    margin-bottom: 30px;
-}
-
-.ai-card {
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-    transition: all 0.3s;
-    background: linear-gradient(to right, #ffffff, #f0f7ff);
-}
-
-.ai-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    transform: translateY(-3px);
-}
-
-.ai-content {
-    display: flex;
-    align-items: center;
-}
-
-.ai-info {
-    flex: 1;
-    padding: 30px;
-}
-
-.ai-title {
-    font-size: 24px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 0 0 15px;
-    position: relative;
-    padding-left: 15px;
-}
-
-.ai-title::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 5px;
-    height: 20px;
-    width: 5px;
-    background-color: #4a9cd8;
-    border-radius: 3px;
-}
-
-.ai-description {
-    color: #7f8c8d;
-    font-size: 16px;
-    line-height: 1.6;
-    margin-bottom: 20px;
-}
-
-.ai-note {
-    font-size: 14px;
-    color: #e67e22;
+.suggestion-name {
     font-weight: 500;
 }
 
-.ai-button {
+/* 疾病列表样式 */
+.disease-list-section {
+    margin-top: 30px;
+    animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.disease-card {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border-radius: 8px;
+    overflow: hidden;
+    border-left: 3px solid transparent;
+    animation: fadeIn 0.5s ease-out forwards;
+    height: 100%;
+    background-color: #fff;
+}
+
+.disease-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    border-left: 3px solid var(--el-color-primary);
+}
+
+.disease-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+    padding: 10px 12px;
+    border-bottom: 1px solid #ebeef5;
+}
+
+.disease-name-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: #333;
+    transition: color 0.3s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.disease-card:hover .disease-name-title {
+    color: var(--el-color-primary);
+}
+
+.disease-card-simple {
+    text-align: center;
+    min-height: 30px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    font-size: 16px;
-    background-color: #4a9cd8;
-    border-color: #4a9cd8;
-    border-radius: 25px;
-    transition: all 0.3s;
+    justify-content: space-between;
+    position: relative;
 }
 
-.ai-button:hover {
-    background-color: #3a8bc8;
-    border-color: #3a8bc8;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(74, 156, 216, 0.3);
+.disease-name-title {
+    font-weight: 600;
+    color: #333;
+    transition: color 0.3s;
+    font-size: 1.05rem;
+    flex-grow: 1;
+    text-align: center;
 }
 
-.ai-image {
-    flex: 1;
+.disease-card:hover .disease-name-title {
+    color: var(--el-color-primary);
+}
+
+.disease-card-indicator {
+    opacity: 0;
+    color: var(--el-color-primary);
+    transition: all 0.3s ease;
+    position: absolute;
+    right: 15px;
+    font-size: 1.1rem;
+}
+
+.disease-card:hover .disease-card-indicator {
+    opacity: 1;
+    transform: translateX(3px);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.disease-card:hover .disease-name-title {
+    color: var(--el-color-primary);
+}
+
+.disease-pagination {
+    margin-top: 30px;
+    margin-bottom: 20px;
     display: flex;
     justify-content: center;
+}
+
+.loading-placeholder,
+.empty-placeholder {
+    min-height: 300px;
+    display: flex;
     align-items: center;
+    justify-content: center;
+    background-color: #f9fafc;
+    border-radius: 12px;
     padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
-.ai-image img {
-    max-width: 100%;
-    height: auto;
-    max-height: 200px;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-    transition: all 0.3s;
-}
-
-.ai-card:hover .ai-image img {
-    transform: scale(1.05);
-}
-
-/* 疾病分类 */
 .disease-categories-section {
-    margin-bottom: 30px;
+    margin-top: 30px;
 }
 
 .section-title {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 600;
-    color: #2c3e50;
-    margin: 0 0 20px;
+    color: #333;
+    margin-bottom: 20px;
     position: relative;
     padding-left: 15px;
 }
@@ -959,798 +939,255 @@ onMounted(() => {
     content: '';
     position: absolute;
     left: 0;
-    top: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
     height: 20px;
-    width: 5px;
-    background-color: #4a9cd8;
-    border-radius: 3px;
+    background-color: var(--el-color-primary);
+    border-radius: 2px;
 }
 
-.categories-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-}
-
-.category-item {
+/* 大科室分类加载动画 */
+.categories-loading {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
-    background-color: white;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.loading-spinner {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    margin-bottom: 15px;
+}
+
+.circular {
+    animation: rotate 2s linear infinite;
+    height: 100%;
+    transform-origin: center center;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+}
+
+.path {
+    stroke: var(--el-color-primary);
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: 0;
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes dash {
+    0% {
+        stroke-dasharray: 1, 150;
+        stroke-dashoffset: 0;
+    }
+
+    50% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -35;
+    }
+
+    100% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -124;
+    }
+}
+
+.loading-text {
+    color: #909399;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+/* 大科室分类网格 */
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.category-item {
+    background-color: #fff;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     cursor: pointer;
-    transition: all 0.3s;
+    text-align: center;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .category-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.category-item.active {
+    border-color: var(--el-color-primary);
+    background-color: rgba(64, 158, 255, 0.08);
 }
 
 .category-icon {
-    width: 60px;
-    height: 60px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
+    background-color: rgba(64, 158, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 15px;
-    border: 2px solid;
-    transition: all 0.3s;
+    margin-bottom: 10px;
+    color: var(--el-color-primary);
+    transition: all 0.3s ease;
 }
 
 .category-item:hover .category-icon {
     transform: scale(1.1);
 }
 
-.category-icon img {
-    width: 30px;
-    height: 30px;
-    transition: all 0.3s;
-}
-
 .category-name {
-    font-size: 16px;
     font-weight: 600;
-    color: #2c3e50;
-    transition: all 0.3s;
+    color: #333;
+    font-size: 15px;
+    transition: color 0.3s ease;
 }
 
 .category-item:hover .category-name {
-    color: #4a9cd8;
+    color: var(--el-color-primary);
 }
 
-/* 热门疾病 */
-.popular-diseases-section {
-    margin-bottom: 30px;
-}
-
-.section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-}
-
-.disease-card {
-    height: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.disease-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-}
-
-.disease-card-content {
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-}
-
-.disease-card-content::before {
-    content: '';
+.category-indicator {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 5px;
-    height: 100%;
-    background-color: #4a9cd8;
-    opacity: 0;
-    transition: all 0.3s;
+    bottom: 8px;
+    right: 8px;
+    color: var(--el-color-primary);
+    animation: pulse 1.5s infinite;
 }
 
-.disease-card:hover .disease-card-content::before {
-    opacity: 1;
-}
-
-.disease-name {
-    font-size: 18px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 0 0 10px;
-    transition: all 0.3s;
-}
-
-.disease-card:hover .disease-name {
-    transform: translateX(8px);
-    color: #4a9cd8;
-}
-
-.disease-stats {
-    display: flex;
-    gap: 15px;
-    margin-top: 15px;
-}
-
-.stat-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #7f8c8d;
-    font-size: 14px;
-}
-
-/* 季节性疾病 */
-.seasonal-diseases-section {
-    margin-bottom: 30px;
-}
-
-.seasonal-disease-card {
-    height: 100%;
-    background-color: white;
-    border-radius: 12px;
-    padding: 20px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s;
-    overflow: hidden;
-}
-
-.seasonal-disease-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 5px;
-    background: linear-gradient(to right, #4a9cd8, #42b983);
-}
-
-.seasonal-disease-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-}
-
-.seasonal-tag {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background-color: #4a9cd8;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.seasonal-name {
-    font-size: 20px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 0 0 10px;
-}
-
-.seasonal-description {
-    color: #7f8c8d;
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 15px;
-}
-
-/* 健康资讯 */
-.health-articles-section {
-    margin-bottom: 30px;
-}
-
-/* 病情分析对话框样式 */
-.analysis-dialog :deep(.el-dialog__header) {
-    padding: 15px 20px;
-    margin-right: 0;
-    border-bottom: 1px solid #edf2f7;
-}
-
-.analysis-container {
-    padding: 20px;
-    max-height: 70vh;
-    overflow-y: auto;
-}
-
-.section-subtitle {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: #2c3e50;
-    font-size: 1.2rem;
-}
-
-/* 症状标签样式 */
-.symptom-tags {
-    margin-bottom: 15px;
-}
-
-.tag-label {
-    display: block;
-    margin-bottom: 8px;
-    color: #5a6a7e;
-}
-
-.tags-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-.symptom-tag {
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.symptom-tag:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.symptom-tag.selected {
-    background-color: #ecf5ff;
-    color: #409eff;
-    border-color: #409eff;
-}
-
-.symptom-input {
-    margin-bottom: 15px;
-}
-
-.analysis-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-/* 分析结果样式 */
-.result-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #edf2f7;
-}
-
-.result-title {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-}
-
-.result-title h3 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 1.2rem;
-}
-
-.result-date {
-    color: #95a5a6;
-    font-size: 0.9rem;
-}
-
-.symptoms-summary {
-    margin-bottom: 15px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 6px;
-    color: #5a6a7e;
-}
-
-.risk-level {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-weight: 500;
-    margin-bottom: 20px;
-}
-
-.risk-高 {
-    background-color: #fef0f0;
-    color: #f56c6c;
-}
-
-.risk-中等 {
-    background-color: #fdf6ec;
-    color: #e6a23c;
-}
-
-.risk-低 {
-    background-color: #f0f9eb;
-    color: #67c23a;
-}
-
-.risk-未知 {
-    background-color: #f4f4f5;
-    color: #909399;
-}
-
-.possible-diseases,
-.recommendations {
-    margin-bottom: 20px;
-}
-
-.possible-diseases h4,
-.recommendations h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #2c3e50;
-    font-size: 1.1rem;
-}
-
-.disease-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.disease-item {
-    padding: 12px;
-    border-radius: 6px;
-    background-color: #f8f9fa;
-    border-left: 4px solid #409eff;
-}
-
-.disease-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.disease-name {
-    font-weight: 500;
-    color: #2c3e50;
-    margin-right: 10px;
-    min-width: 80px;
-}
-
-.disease-probability {
-    flex: 1;
-    margin-right: 10px;
-}
-
-.probability-text {
-    font-size: 0.9rem;
-    color: #5a6a7e;
-    min-width: 40px;
-    text-align: right;
-}
-
-.disease-description {
-    margin: 0;
-    color: #5a6a7e;
-    font-size: 0.95rem;
-    line-height: 1.5;
-}
-
-.recommendation-list {
-    margin: 0;
-    padding-left: 20px;
-}
-
-.recommendation-list li {
-    margin-bottom: 5px;
-    color: #5a6a7e;
-}
-
-.analysis-disclaimer {
-    margin-top: 20px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 6px;
-    color: #95a5a6;
-    font-size: 0.9rem;
-    text-align: center;
-}
-
-/* 历史记录样式 */
-.history-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.history-header h3 {
-    margin: 0;
-    color: #2c3e50;
-    font-size: 1.2rem;
-}
-
-.empty-history {
-    text-align: center;
-    padding: 30px;
-    color: #95a5a6;
-}
-
-.history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.history-item {
-    display: flex;
-    align-items: center;
-    padding: 12px 15px;
-    border-radius: 6px;
-    background-color: #f8f9fa;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.history-item:hover {
-    background-color: #ecf5ff;
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.history-item-content {
-    flex: 1;
-}
-
-.history-date {
-    font-size: 0.85rem;
-    color: #95a5a6;
-    margin-bottom: 5px;
-}
-
-.history-symptoms {
-    font-weight: 500;
-    color: #2c3e50;
-    margin-bottom: 5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 400px;
-}
-
-.history-diseases {
-    font-size: 0.9rem;
-    color: #5a6a7e;
-}
-
-.history-risk {
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    margin: 0 10px;
-}
-
-.history-arrow {
-    color: #c0c4cc;
-}
-
-.article-card {
-    height: 100%;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.article-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-}
-
-.article-image {
-    height: 180px;
-    overflow: hidden;
-}
-
-.article-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s;
-}
-
-.article-card:hover .article-image img {
-    transform: scale(1.05);
-}
-
-.article-content {
-    padding: 20px;
-}
-
-.article-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 0 0 10px;
-    display: -webkit-box;
-    line-clamp: 2;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    transition: all 0.3s;
-}
-
-.article-card:hover .article-title {
-    color: #4a9cd8;
-}
-
-.article-summary {
-    color: #7f8c8d;
-    font-size: 14px;
-    line-height: 1.6;
-    margin-bottom: 15px;
-    display: -webkit-box;
-    line-clamp: 3;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.article-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-top: 1px solid #edf2f7;
-    padding-top: 15px;
-}
-
-.article-date {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: #95a5a6;
-    font-size: 14px;
-}
-
-/* AI对话框 */
-.ai-dialog :deep(.el-dialog__header) {
-    padding: 20px;
-    margin: 0;
-    background-color: #4a9cd8;
-    color: white;
-}
-
-.ai-dialog :deep(.el-dialog__title) {
-    color: white;
-    font-weight: 600;
-}
-
-.ai-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
-    color: white;
-}
-
-.ai-dialog :deep(.el-dialog__body) {
-    padding: 0;
-}
-
-.ai-chat-container {
-    display: flex;
-    flex-direction: column;
-    height: 500px;
-}
-
-.ai-chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    background-color: #f8fafc;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.chat-message {
-    display: flex;
-    gap: 10px;
-    max-width: 80%;
-}
-
-.ai-message {
-    align-self: flex-start;
-}
-
-.user-message {
-    align-self: flex-end;
-    flex-direction: row-reverse;
-}
-
-.message-avatar {
-    flex-shrink: 0;
-}
-
-.message-content {
-    padding: 12px 16px;
-    border-radius: 12px;
-    font-size: 14px;
-    line-height: 1.5;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.ai-message .message-content {
-    background-color: white;
-    color: #2c3e50;
-    border-top-left-radius: 4px;
-}
-
-.user-message .message-content {
-    background-color: #4a9cd8;
-    color: white;
-    border-top-right-radius: 4px;
-}
-
-.ai-typing {
-    align-self: flex-start;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.typing-indicator {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 12px 16px;
-    background-color: white;
-    border-radius: 12px;
-    border-top-left-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.typing-indicator span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #95a5a6;
-    animation: typing 1.4s infinite both;
-}
-
-.typing-indicator span:nth-child(2) {
-    animation-delay: 0.2s;
-}
-
-.typing-indicator span:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-@keyframes typing {
+@keyframes pulse {
     0% {
-        opacity: 0.4;
-        transform: translateY(0);
+        opacity: 0.6;
+        transform: scale(1);
     }
 
     50% {
         opacity: 1;
-        transform: translateY(-4px);
+        transform: scale(1.2);
     }
 
     100% {
-        opacity: 0.4;
-        transform: translateY(0);
+        opacity: 0.6;
+        transform: scale(1);
     }
 }
 
-.ai-chat-input {
+/* 子科室列表样式 */
+.sub-departments-container {
+    margin-top: 25px;
+    background-color: #f9fafc;
+    border-radius: 12px;
     padding: 20px;
-    border-top: 1px solid #edf2f7;
-    background-color: white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    border: 1px solid #ebeef5;
 }
 
-.ai-disclaimer {
-    margin-top: 10px;
-    font-size: 12px;
-    color: #e67e22;
-    line-height: 1.5;
+.sub-departments-header {
+    text-align: center;
+    margin-bottom: 15px;
 }
 
-/* 响应式设计 */
-@media (max-width: 1200px) {
-    .main-content {
-        padding: 0 15px;
-    }
+.sub-departments-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
 }
 
-@media (max-width: 992px) {
-    .categories-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    .ai-content {
-        flex-direction: column;
-    }
-
-    .ai-info {
-        width: 100%;
-        padding: 20px;
-    }
-
-    .ai-image {
-        width: 100%;
-        padding: 0 20px 20px;
-    }
+.sub-departments-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
 }
 
-@media (max-width: 768px) {
-    .page-header {
-        padding: 40px 0 60px 0;
-    }
-
-    .page-title {
-        font-size: 1.8rem;
-    }
-
-    .page-subtitle {
-        font-size: 1rem;
-    }
-
-    .categories-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .seasonal-diseases-section .el-carousel {
-        margin: 0 -20px;
-    }
-
-    .chat-message {
-        max-width: 90%;
-    }
+.sub-department-item {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 1px solid #ebeef5;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
-@media (max-width: 576px) {
-    .search-input {
-        --el-input-height: 45px;
-    }
+.sub-department-item:hover {
+    background-color: #f0f9ff;
+    border-color: #a0cfff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
 
-    .section-title {
-        font-size: 20px;
-    }
+.sub-department-item.active {
+    background-color: var(--el-color-primary);
+    color: #fff;
+    border-color: var(--el-color-primary);
+}
 
-    .ai-title {
-        font-size: 20px;
-    }
+.sub-dep-icon {
+    margin-right: 6px;
+    font-size: 16px;
+}
 
-    .ai-description {
-        font-size: 14px;
-    }
+.sub-dep-name {
+    font-weight: 500;
+}
 
-    .ai-button {
-        width: 100%;
-        justify-content: center;
-    }
+/* 过渡动画 */
+.slide-fade-enter-active {
+    transition: all 0.4s cubic-bezier(0.36, 0.66, 0.04, 1);
+}
 
-    .ai-chat-container {
-        height: 400px;
-    }
+.slide-fade-leave-active {
+    transition: all 0.3s cubic-bezier(0.36, 0.66, 0.04, 1);
+}
 
-    .chat-message {
-        max-width: 100%;
-    }
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-15px);
 }
 </style>

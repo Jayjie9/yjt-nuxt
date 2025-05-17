@@ -1,16 +1,8 @@
 <script setup>
 import { ElMessage } from 'element-plus'
 import { useApi } from '~/composables'
-import {
-    User,
-    ArrowLeft,
-    Phone,
-    Message,
-    Lock,
-    Document,
-    Check,
-    Upload
-} from '@element-plus/icons-vue'
+import { User, ArrowLeft, Phone, Message, Lock, Document, Check, Upload } from '@element-plus/icons-vue'
+import { FileType } from '~/types/common'
 
 // 导入api
 const api = useApi()
@@ -50,7 +42,6 @@ const rules = {
 
 const formRef = ref(null)
 const loading = ref(false)
-const fileUrl = ref('http://localhost:9999/api/oss/file/fileUpload')
 const router = useRouter()
 
 // 获取用户信息
@@ -97,36 +88,60 @@ const saveUserInfo = async () => {
     })
 }
 
-// 上传头像成功回调
-const onAvatarSuccess = (response, file) => {
-    if (response.code !== 200) {
-        ElMessage.error("上传失败")
-        return
-    }
+// 处理头像上传请求
+const handleAvatarUpload = async (options) => {
     try {
+        const { file } = options
+        // 使用API中的uploadFile函数上传文件
+        const { data: response } = await api.oss.uploadFile(file, FileType.AVATAR)
+
+        if (response.code !== 200) {
+            ElMessage.error('头像上传失败')
+            options.onError(new Error('上传失败'))
+            return
+        }
+
         // 获取上传返回的数据
         const { url, fileName } = response.data
-
         // 直接使用返回的URL显示头像
         userForm.avatar = url
-        // 保存文件名用于后续URL续签（如果需要）
+        // 保存文件名用于后续URL续签
         userForm.avatarFileName = fileName
 
+        // 调用成功回调
+        options.onSuccess(response)
         ElMessage.success('头像更新成功')
-        // 不需要手动调用updateAvatar接口，后端会通过RabbitMQ自动更新用户头像信息
     } catch (error) {
         console.error('更新头像失败:', error)
         ElMessage.error('头像更新失败，请稍后重试')
+        options.onError(error)
     }
 }
 
-// 上传证件照片成功回调
-const onCertificateSuccess = (response, file) => {
-    if (response.code !== 200) {
-        ElMessage.error("上传失败")
-        return
+// 处理证件上传请求
+const handleCertificateUpload = async (options) => {
+    try {
+        const { file } = options
+        // 使用API中的uploadFile函数上传文件
+        const { data: response } = await api.oss.uploadFile(file, FileType.ID_CARD)
+
+        if (response.code !== 200) {
+            ElMessage.error('证件上传失败')
+            options.onError(new Error('上传失败'))
+            return
+        }
+
+        // 获取上传返回的数据并设置证件URL
+        userForm.certificatesUrl = response.data.url
+
+        // 调用成功回调
+        options.onSuccess(response)
+        ElMessage.success('证件上传成功')
+    } catch (error) {
+        console.error('上传证件失败:', error)
+        ElMessage.error('证件上传失败，请稍后重试')
+        options.onError(error)
     }
-    userForm.certificatesUrl = file.response.data
 }
 
 // 上传前验证
@@ -202,8 +217,8 @@ onMounted(() => {
                             </div>
                             <img v-else :src="userForm.avatar" class="avatar-image" alt="用户头像">
 
-                            <el-upload class="avatar-upload" :action="fileUrl" :show-file-list="false"
-                                :on-success="onAvatarSuccess" :before-upload="beforeUpload">
+                            <el-upload class="avatar-upload" :http-request="handleAvatarUpload" :show-file-list="false"
+                                :before-upload="beforeUpload">
                                 <div class="upload-overlay">
                                     <el-icon class="upload-icon">
                                         <Upload />
@@ -273,15 +288,15 @@ onMounted(() => {
                                     <div v-if="userForm.certificatesUrl" class="certificate-preview">
                                         <img :src="userForm.certificatesUrl" alt="证件照片">
                                         <div class="certificate-overlay">
-                                            <el-upload :action="fileUrl" :show-file-list="false"
-                                                :on-success="onCertificateSuccess" :before-upload="beforeUpload">
+                                            <el-upload :http-request="handleCertificateUpload" :show-file-list="false"
+                                                :before-upload="beforeUpload">
                                                 <el-button type="primary" size="small">更换照片</el-button>
                                             </el-upload>
                                         </div>
                                     </div>
 
-                                    <el-upload v-else class="upload-area" :action="fileUrl" :show-file-list="false"
-                                        :on-success="onCertificateSuccess" :before-upload="beforeUpload">
+                                    <el-upload v-else class="upload-area" :http-request="handleCertificateUpload"
+                                        :show-file-list="false" :before-upload="beforeUpload">
                                         <div class="upload-content">
                                             <el-icon class="upload-icon">
                                                 <Upload />

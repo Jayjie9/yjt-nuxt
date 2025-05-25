@@ -10,6 +10,8 @@ const userInfoApi = api.user
 
 // 用户信息表单
 const userForm = reactive({
+    id: '',
+    nickName: '',
     name: '',
     phone: '',
     email: '',
@@ -24,9 +26,9 @@ const userForm = reactive({
 
 // 表单验证规则
 const rules = {
-    name: [
-        { required: true, message: '请输入姓名', trigger: 'blur' },
-        { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
+    nickName: [
+        { required: true, message: '请输入昵称', trigger: 'blur' },
+        { min: 2, max: 20, message: '长度在 2 到 20个字符', trigger: 'blur' }
     ],
     phone: [
         { required: true, message: '请输入手机号', trigger: 'blur' },
@@ -51,8 +53,8 @@ const getUserInfo = async () => {
         if (response.code === 200 && response.data) {
             // 填充表单数据
             Object.keys(userForm).forEach(key => {
-                if (response.data[key] !== undefined) {
-                    userForm[key] = response.data[key]
+                if (response.data.userInfo[key] !== undefined) {
+                    userForm[key] = response.data.userInfo[key]
                 }
             })
         }
@@ -215,7 +217,7 @@ onMounted(() => {
                             <div class="avatar-wrapper" v-if="!userForm.avatar">
                                 <span>{{ userForm.name ? userForm.name.substring(0, 1) : '?' }}</span>
                             </div>
-                            <img v-else :src="userForm.avatar" class="avatar-image" alt="用户头像">
+                            <img v-if="avatarUrl" :src="avatarUrl" alt="用户头像" class="avatar-image">
 
                             <el-upload class="avatar-upload" :http-request="handleAvatarUpload" :show-file-list="false"
                                 :before-upload="beforeUpload">
@@ -240,8 +242,8 @@ onMounted(() => {
                             </h3>
 
                             <div class="form-row">
-                                <el-form-item label="姓名" prop="name" class="form-item">
-                                    <el-input v-model="userForm.name" placeholder="请输入姓名" />
+                                <el-form-item label="昵称" prop="nickName" class="form-item">
+                                    <el-input v-model="userForm.nickName" placeholder="请输入昵称" />
                                 </el-form-item>
 
                                 <el-form-item label="性别" prop="gender" class="form-item">
@@ -319,11 +321,11 @@ onMounted(() => {
 
                             <div class="form-row">
                                 <el-form-item label="手机号码" prop="phone" class="form-item">
-                                    <el-input v-model="userForm.phone" placeholder="请输入手机号码" />
+                                    <el-input v-model="userForm.phone" placeholder="您绑定的手机号" disabled />
                                 </el-form-item>
 
                                 <el-form-item label="电子邮箱" prop="email" class="form-item">
-                                    <el-input v-model="userForm.email" placeholder="请输入电子邮箱" />
+                                    <el-input v-model="userForm.email" placeholder="您绑定的邮箱" disabled />
                                 </el-form-item>
                             </div>
                         </div>

@@ -342,12 +342,6 @@ const checkLoginAttempts = (): boolean => {
 const goToHome = () => {
   navigateTo('/');
 }
-
-// 导航到注册页
-const goToRegister = () => {
-  ElMessage.info('注册功能正在开发中');
-}
-
 // 忘记密码
 const forgotPassword = () => {
   ElMessage.info('找回密码功能正在开发中');
@@ -373,10 +367,9 @@ onUnmounted(() => {
           <span class="logo-text">医捷通</span>
         </div>
         <nav class="nav-links">
-          <a href="/" class="nav-link">首页</a>
-          <a href="#" class="nav-link">医疗服务</a>
-          <a href="#" class="nav-link">健康资讯</a>
-          <a href="#" class="nav-link">关于我们</a>
+          <a href="/" class="nav-link">挂号服务</a>
+          <a href="/disease" class="nav-link">疾病百科</a>
+          <a href="/help" class="nav-link">关于我们</a>
         </nav>
       </div>
     </header>
@@ -517,7 +510,7 @@ onUnmounted(() => {
 
             <!-- 注册提示 -->
             <div class="register-hint">
-              还没有账号？<a class="register-link" @click="goToRegister">立即注册</a>
+              登录成功，自动注册！
             </div>
 
             <!-- 错误信息提示 -->
@@ -914,17 +907,6 @@ onUnmounted(() => {
   margin-top: 20px;
   font-size: 14px;
   color: #606266;
-}
-
-.register-link {
-  color: #409EFF;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.register-link:hover {
-  color: #66b1ff;
-  text-decoration: underline;
 }
 
 /* 页脚样式 */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, OfficeBuilding, Clock, ArrowDown, ArrowRight, Notification, Warning, Location, Trophy } from '@element-plus/icons-vue'
+import { Search, OfficeBuilding, Clock, ArrowDown, ArrowRight, Location, Trophy } from '@element-plus/icons-vue'
 import { useApi } from '~/composables'
 import { useRouter } from 'nuxt/app'
 import type { Hospital, HospitalQueryParams, LinkItem } from '~/types'
@@ -57,28 +57,15 @@ const commonDepts = ref([
 ])
 
 const linksData = [
-  { hoscode: '1000_0', hosname: '北京协和医院' },
-  { hoscode: '1000_1', hosname: '上海瑞金医院' },
-  { hoscode: '1000_2', hosname: '广州中山大学附属第一医院' },
-  { hoscode: '4200_0', hosname: '华中科技大学同济医学院附属同济医院' },
+  { hoscode: '42_1_46', hosname: '武汉大学人民医院' },
+  { hoscode: '11_0_3', hosname: '首都医科大学附属北京康复医院' },
+  { hoscode: '11_1_92', hosname: '清华大学第一附属医院' },
+  { hoscode: '42_1_49', hosname: '中国人民解放军中部战区总医院' },
 ]
-
-const platformNotices = ref([
-  '关于延长北京大学国际医院放假的通知',
-  '北京中医药大学东方医院部分科室医生门诊',
-  '武警总医院号源暂停更新通知',
-  '武警总医院号源暂停更新通知'
-])
-
-const stopNotices = ref([
-  '中国人民解放军总医院第六医学中心(原海军总医院)呼吸内科门诊停诊公告',
-  '首都医科大学附属北京潞河医院老年医学科门诊停诊公告',
-  '中日友好医院中西医结合心内科门诊停诊公告'
-])
 
 /* 初始化数据：SSR */
 const { data: districtData } = await useAsyncData('districts', () =>
-  dictionary.findByParentIdDollar('86')
+  dictionary.findByDictCodeDollar('Province')
 )
 const { data: hosNatureData } = await useAsyncData('HosNature', () =>
   dictionary.findByDictCodeDollar('HosNature')
@@ -95,25 +82,25 @@ const init = () => {
     filterLoading.value = true
     // 查询医院等级列表
     hosNatureList.value = [{ id: 0, name: '全部', value: '' }]
-    if (hosNatureData.value?.data?.data) {  // 修改这里，增加安全访问
+    if (hosNatureData.value?.data?.data) {
       let names = hosNatureData.value.data.data
       hosNatureList.value.push(...names)
     }
     // 查询医院等级列表
     hosLevelList.value = [{ id: 0, name: '全部', value: '' }]
-    if (hosLevelData.value?.data?.data) {  // 修改这里，增加安全访问
+    if (hosLevelData.value?.data?.data) {
       let names = hosLevelData.value.data.data
       hosLevelList.value.push(...names)
     }
     // 查询医院类型列表
     hosTypeList.value = [{ id: 0, name: '全部', value: '' }]
-    if (hosTypeData.value?.data?.data) {  // 修改这里，增加安全访问
+    if (hosTypeData.value?.data?.data) {
       let names = hosTypeData.value.data.data
       hosTypeList.value.push(...names)
     }
     // 查询地区数据
     districtList.value = [{ id: 0, name: '全部', value: '' }]
-    if (districtData.value?.data?.data) {  // 修改这里，增加安全访问
+    if (districtData.value?.data?.data) {
       let dists = districtData.value.data.data
       districtList.value.push(...dists)
     }
@@ -246,42 +233,7 @@ const handleSelect = (item: Record<string, any>) => {
 const navigateToHospital = (hoscode: string) => {
   router.push(`/hospital/${hoscode}`)
 }
-// 系统公告数据
-const systemAnnouncements = ref([
-  {
-    id: '1',
-    title: '系统维护通知',
-    date: new Date('2025-04-22T10:00:00'),
-    content: `<p>尊敬的用户：</p>
-    <p>为了提供更优质的服务，我们的系统将于2025年4月25凌晨2:00-4:00进行例行维护升级。维护期间，网站及APP将暂停服务，给您带来的不便敬请谅解。</p>
-    <p>此次更新包括：</p>
-    <ul>
-      <li>预约流程优化，提升用户体验</li>
-      <li>新增专家在线问诊功能</li>
-      <li>修复已知问题，提升系统稳定性</li>
-    </ul>
-    <p>如有疑问，请联系客服热线：400-123-4567</p>`,
-    attachments: [
-      { name: '系统更新详情.pdf', url: '#' },
-      { name: '新功能使用指南.pdf', url: '#' }
-    ]
-  },
-  {
-    id: '2',
-    title: '春节门诊安排',
-    date: new Date('2025-04-21T14:30:00'),
-    content: `<p>尊敬的用户：</p>
-    <p>春节期间（2025年2月1日至2月7日），我院门诊安排如下：</p>
-    <ul>
-      <li>急诊科：24小时正常接诊</li>
-      <li>内科、外科：每日上午8:00-12:00开诊</li>
-      <li>专科门诊：暂停服务，2月8日恢复正常</li>
-    </ul>
-    <p>请广大患者合理安排就诊时间。祝大家新春快乐，身体健康！</p>`,
-    attachments: []
-  }
-]);
-const announcementModal = ref(null);
+
 
 /* 全局初始化 */
 init()
@@ -341,8 +293,7 @@ const leave = (el: any, done: any) => {
 
 <template>
   <div class="page-common">
-    <!-- 系统公告弹窗 -->
-    <SystemAnnouncement ref="announcementModal" :announcements="systemAnnouncements" />
+
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-content">
@@ -352,8 +303,7 @@ const leave = (el: any, done: any) => {
         <!-- 搜索区域 -->
         <div class="search-container">
           <el-autocomplete class="home-search-input" v-model="searchName" :fetch-suggestions="querySearchAsync"
-            placeholder="搜索医院名称或科室" @select="handleSelect" :trigger-on-focus="true" highlight-first-item
-            fit-input-width>
+            placeholder="搜索医院名称" @select="handleSelect" :trigger-on-focus="true" highlight-first-item fit-input-width>
             <template #prefix>
               <el-icon>
                 <Search />
@@ -376,7 +326,7 @@ const leave = (el: any, done: any) => {
 
     <!-- 主要内容区域 -->
     <div class="main-content">
-      <div class="content-left">
+      <div class="content-container">
         <!-- 筛选面板 -->
         <div class="filter-panel" v-loading="filterLoading">
 
@@ -516,48 +466,6 @@ const leave = (el: any, done: any) => {
           <el-pagination v-model:current-page="page" v-model:page-size="limit" :page-sizes="[5, 10, 20]"
             layout="total, sizes, prev, pager, next, jumper" :total="totalElements" @size-change="handleSizeChange"
             @current-change="handleCurrentChange" background />
-        </div>
-      </div>
-
-      <div class="content-right">
-        <!-- 公告面板 -->
-        <div class="notice-panel">
-          <div class="panel-header">
-            <div class="notice-title">
-              <el-icon>
-                <Notification />
-              </el-icon>
-              <span>最新公告</span>
-            </div>
-            <el-button link>查看全部</el-button>
-          </div>
-
-          <div class="notice-list">
-            <div v-for="(notice, index) in platformNotices" :key="index" class="notice-item">
-              <span class="notice-text">{{ notice }}</span>
-              <span class="notice-time">{{ new Date().toLocaleDateString() }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 停诊信息 -->
-        <div class="notice-panel warning-panel">
-          <div class="panel-header">
-            <div class="notice-title">
-              <el-icon>
-                <Warning />
-              </el-icon>
-              <span>停诊信息</span>
-            </div>
-            <el-button link>查看全部</el-button>
-          </div>
-
-          <div class="notice-list">
-            <div v-for="(notice, index) in stopNotices" :key="index" class="notice-item">
-              <span class="notice-text">{{ notice }}</span>
-              <span class="notice-time">{{ new Date().toLocaleDateString() }}</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -713,10 +621,13 @@ const leave = (el: any, done: any) => {
 
 /* 主内容区域 */
 .main-content {
-  display: grid;
+  max-width: 1000px;
   margin: -40px auto 0;
-  grid-template-columns: 1fr 300px;
-  gap: 20px;
+  padding: 0 20px;
+}
+
+.content-container {
+  min-height: 600px;
 }
 
 /* 筛选面板 */
@@ -908,63 +819,7 @@ const leave = (el: any, done: any) => {
   -webkit-box-orient: vertical;
 }
 
-/* 右侧面板 */
-.notice-panel {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
 
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.notice-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.notice-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.notice-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.notice-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.notice-text {
-  color: #303133;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.notice-time {
-  color: #909399;
-  font-size: 12px;
-}
-
-.warning-panel .header-title .el-icon {
-  color: var(--el-color-danger);
-}
 
 /* 分页容器 */
 .pagination-container {
@@ -976,13 +831,7 @@ const leave = (el: any, done: any) => {
 /* 响应式布局 */
 @media screen and (max-width: 1024px) {
   .main-content {
-    grid-template-columns: 1fr;
-  }
-
-  .content-right {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    padding: 0 15px;
   }
 }
 
@@ -1008,9 +857,7 @@ const leave = (el: any, done: any) => {
     grid-template-columns: 1fr;
   }
 
-  .content-right {
-    grid-template-columns: 1fr;
-  }
+
 }
 
 @media screen and (max-width: 480px) {

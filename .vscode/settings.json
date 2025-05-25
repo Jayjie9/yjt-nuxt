@@ -14,4 +14,4 @@
   "prettier.singleQuote": true,
   "prettier.trailingComma": "es5",
   "typescript.tsserver.experimental.enableProjectDiagnostics": true
-} 
+}

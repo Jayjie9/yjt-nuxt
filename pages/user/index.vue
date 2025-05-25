@@ -340,7 +340,7 @@ onMounted(() => {
             </div>
           </div>
           <div class="profile-info">
-            <h2 class="profile-name">{{ userInfo.name || '未认证用户' }}</h2>
+            <h2 class="profile-name">{{ userInfo.nickName || '未认证用户' }}</h2>
             <div class="profile-status">
               <el-tag :type="userInfo.authStatus > 1 ? 'success' : 'danger'" effect="light">
                 {{ authStatusString || '未认证' }}
@@ -636,21 +636,19 @@ onMounted(() => {
                       <el-icon>
                         <Location />
                       </el-icon>
-                      <span>{{ item.hospital.address }}</span>
+                      <span class="address-text">{{ item.hospital.address }}</span>
                     </div>
                     <div class="favorite-intro" v-if="item.hospital.intro">
-                      <el-tooltip :content="item.hospital.intro" placement="top" :show-after="500">
-                        <div class="intro-text">{{ item.hospital.intro }}</div>
-                      </el-tooltip>
+                      <div class="intro-text">{{ item.hospital.intro }}</div>
                     </div>
-                    <div class="favorite-route" v-if="item.hospital.route">
+                    <!-- <div class="favorite-route" v-if="item.hospital.route">
                       <el-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                           width="16" height="16">
                           <path
                             d="M12 2c-4.42 0-8 3.58-8 8 0 1.49.42 2.85 1.12 4.03L12 23l6.88-8.97c.7-1.18 1.12-2.54 1.12-4.03 0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" />
                         </svg></el-icon>
                       <span>{{ item.hospital.route }}</span>
-                    </div>
+                    </div> -->
                     <div class="favorite-actions">
                       <el-button type="primary" size="small"
                         @click="$router.push(`/hospital/${item.hospital.hoscode}`)">
@@ -1551,6 +1549,18 @@ onMounted(() => {
 .security-desc {
   font-size: 14px;
   color: #7f8c8d;
+}
+
+/* 收藏医院卡片样式 */
+.favorite-address .address-text,
+.favorite-intro .intro-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+  max-height: 3em;
 }
 
 /* 消息通知 */

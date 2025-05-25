@@ -7,12 +7,7 @@ import { useUserStore } from '~/stores/user'
  */
 
 // 需要JWT认证的API路径前缀
-const JWT_AUTH_PATHS = [
-  '/api/user',
-  '/api/appointment',
-  '/api/patient',
-  '/api/order',
-]
+const JWT_AUTH_PATHS = ['/api/user', '/api/order']
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
   // 检查是否是API请求
@@ -33,11 +28,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   if (jwt.isTokenExpired() && !jwt.isRefreshing.value) {
     const refreshed = await jwt.refreshAccessToken()
     if (!refreshed) {
-      // 刷新失败，需要重新登录
-      // 刷新失败，提醒用户当前登录态失效，但不是直接跳转登录页，而是提示用户重新登录
+      // 刷新失败
       userStore.logout()
       if (import.meta.client) {
-        window.location.href = '/login'
+        ElMessage.warning('当前登录态已失效，请重新登录')
       }
       return
     }

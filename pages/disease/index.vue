@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Search, ChatDotRound, ArrowRight, View, Share, Star, Location, Calendar, DataAnalysis, Document, WarningFilled } from '@element-plus/icons-vue'
+import { Search, ArrowRight, View, Share, Star, Location, Calendar, DataAnalysis, Document, WarningFilled } from '@element-plus/icons-vue'
 import { useApi } from '~/composables'
 
 // 导入API
@@ -10,15 +10,6 @@ const disease = useApi().disease
 // 搜索相关
 const searchQuery = ref('')
 const isSearching = ref(false)
-const searchResults = ref([])
-
-// AI问诊相关
-const aiDialogVisible = ref(false)
-const aiMessages = ref([
-    { role: 'assistant', content: '您好，我是医疗AI助手，请描述您的症状，我将为您提供初步诊断建议。' }
-])
-const userInput = ref('')
-const aiLoading = ref(false)
 
 // 病情分析相关
 const analysisDialogVisible = ref(false)
@@ -30,7 +21,12 @@ const showHistory = ref(false)
 
 
 // 症状标签
-const commonSymptoms = ref([])
+const commonSymptoms = ref([
+    '头痛',
+    '发热',
+    '咳嗽',
+    '呼吸困难',
+])
 // 选中的症状标签
 const selectedSymptoms = ref([])
 
@@ -136,6 +132,48 @@ const handleSubDepartmentSelect = (subDepartment) => {
     loadDiseaseList()
 }
 
+// 筛选核心内容部分
+const filterCoreSections = (sections) => {
+    if (!sections || !Array.isArray(sections)) return []
+
+    // 优先展示的部分标题
+    const priorityTitles = ['介绍', '症状表现', '发病原因', '治疗方法']
+
+    // 按优先级筛选sections
+    const prioritySections = []
+
+    // 先添加优先级高的部分
+    priorityTitles.forEach(title => {
+        const section = sections.find(s => s.title === title)
+        if (section) {
+            prioritySections.push(section)
+        }
+    })
+
+    // 如果没有找到任何优先级高的部分，则返回前两个section
+    if (prioritySections.length === 0 && sections.length > 0) {
+        return sections.slice(0, 2)
+    }
+
+    // 最多返回3个section
+    return prioritySections.slice(0, 3)
+}
+
+// 格式化section内容
+const formatSectionContent = (text) => {
+    if (!text) return '暂无内容'
+
+    // 移除HTML标签
+    const plainText = text.replace(/<[^>]*>/g, '')
+
+    // 限制长度，最多显示100个字符
+    if (plainText.length > 100) {
+        return plainText.substring(0, 100) + '...'
+    }
+
+    return plainText
+}
+
 // 跳转到疾病详情页
 const navigateToDisease = (disease) => {
     // 保存疾病信息到本地存储，以便在详情页使用
@@ -171,11 +209,15 @@ const querySearchDiseaseAsync = (queryString, cb) => {
             let results = []
 
             if (data.data && Array.isArray(data.data)) {
+                // 保存原始搜索结果
                 diseaseSearchResults.value = data.data
-                results = diseaseSearchResults.value.filter(item =>
-                    item.name.toLowerCase().indexOf(queryString.toLowerCase()) === 0 ||
-                    (item.description && item.description.toLowerCase().indexOf(queryString.toLowerCase()) !== -1)
-                )
+                // 将后端返回的数据格式化为自动补全需要的格式
+                results = diseaseSearchResults.value.map(item => ({
+                    value: item.discode,
+                    diseaseName: item.diseaseName,
+                    depname: item.depname,
+                    discode: item.discode
+                }))
             } else {
                 console.warn('搜索返回的数据结构不符合预期:', data)
             }
@@ -192,58 +234,12 @@ const querySearchDiseaseAsync = (queryString, cb) => {
 // 处理疾病选择
 const handleDiseaseSelect = (item) => {
     // 如果选择了搜索结果，直接跳转到疾病详情页
-    viewDiseaseDetail(item)
-}
-
-// 查看疾病详情
-const viewDiseaseDetail = (disease) => {
-    // 检查疾病对象是否有 value 属性，如果没有，可能是从搜索结果中选择的
-    const diseaseCode = disease.value || disease.id
-    if (!diseaseCode) {
-        console.error('无效的疾病数据:', disease)
-        return
+    if (item && item.discode) {
+        navigateTo(`/disease/${item.discode}`)
     }
-
-    // 保存疾病信息到本地存储，以便在详情页使用
-    localStorage.setItem('selectedDisease', JSON.stringify(disease))
-
-    // 跳转到疾病详情页
-    navigateTo(`/disease/${diseaseCode}`)
 }
 
-// 发送AI消息
-const sendAiMessage = () => {
-    if (!userInput.value.trim()) return
 
-    // 添加用户消息
-    aiMessages.value.push({ role: 'user', content: userInput.value })
-
-    // 清空输入框
-    const userQuestion = userInput.value
-    userInput.value = ''
-
-    // 模拟AI回复
-    aiLoading.value = true
-    setTimeout(() => {
-        // 这里应该是实际的AI API调用
-        // const { data } = await diseaseApi.aiDiagnosis(userQuestion)
-
-        // 模拟AI回复
-        let aiResponse = ''
-        if (userQuestion.includes('头痛')) {
-            aiResponse = '头痛可能由多种原因引起，如紧张性头痛、偏头痛、颅内感染等。建议您注意休息，如症状持续或加重，请及时就医。'
-        } else if (userQuestion.includes('发热') || userQuestion.includes('发烧')) {
-            aiResponse = '发热是机体对感染或其他疾病的一种防御反应。如体温超过38.5℃，请适当使用退热药物，多饮水，并及时就医。'
-        } else if (userQuestion.includes('咳嗽')) {
-            aiResponse = '咳嗽可能是由感冒、支气管炎、肺炎等引起。如伴有高热、胸痛或呼吸困难，建议尽快就医。'
-        } else {
-            aiResponse = '根据您描述的症状，建议您及时就医，由专业医生进行面诊和必要的检查，以获得准确诊断和治疗方案。'
-        }
-
-        aiMessages.value.push({ role: 'assistant', content: aiResponse })
-        aiLoading.value = false
-    }, 1000)
-}
 
 // 添加症状标签
 const addSymptomTag = (symptom) => {
@@ -282,13 +278,23 @@ const submitAnalysis = async () => {
         recommendations: [],
         riskLevel: ''
     }
+    const diseaseList = data.data
+    console.log('diseaseList', diseaseList);
 
-    if (symptoms.includes('头痛')) {
-        result.possibleDiseases.push(
-            { name: '偏头痛', probability: 0.75, description: '偏头痛是一种常见的神经血管性疾病，特点是反复发作的中重度、搏动性头痛。' },
-            { name: '紧张性头痛', probability: 0.65, description: '紧张性头痛是最常见的头痛类型，通常表现为双侧头部的紧绷或压迫感。' }
-        )
-        result.riskLevel = '中等'
+
+    if (Array.isArray(data.data)) {
+        result.possibleDiseases = data.data.map(item => {
+            const disease = item.disease || {}
+            return {
+                name: disease.name || '未知疾病',
+                discode: disease.discode || '未知编码',
+                department: disease.department.depname || '未知科室',
+                category: disease.category.bigname || '未知分类',
+                probability: item.relatedScore ? item.relatedScore / 100 : null,
+                description: disease.sections?.find(sec => sec.title === '介绍')?.text || '',
+                hospital: disease.hospital || null  // 假设后端会在此添加 hospital 字段
+            }
+        })
     }
 
     // 如果没有匹配到特定疾病
@@ -363,17 +369,6 @@ const restorePreviousState = () => {
 onMounted(() => {
     fetchDiseaseCategories() // 获取大科室分类
     loadDiseaseList() // 初始加载疾病列表
-
-    // 获取历史分析记录
-    // const fetchAnalysisHistory = async () => {
-    //     try {
-    //         const { data } = await analysisApi.getAnalysisHistory()
-    //         analysisHistory.value = data || []
-    //     } catch (error) {
-    //         console.error('获取历史分析记录失败:', error)
-    //     }
-    // }
-    // fetchAnalysisHistory()
 })
 </script>
 
@@ -397,8 +392,8 @@ onMounted(() => {
                         </template>
                         <template #default="{ item }">
                             <div class="suggestion-item">
-                                <span class="suggestion-name">{{ item.name }}</span>
-                                <el-tag size="small" effect="plain" type="info">{{ item.category }}</el-tag>
+                                <span class="suggestion-name">{{ item.diseaseName }}</span>
+                                <el-tag size="small" effect="plain" type="info">{{ item.depname }}</el-tag>
                             </div>
                         </template>
                     </el-autocomplete>
@@ -407,68 +402,11 @@ onMounted(() => {
         </div>
 
         <div class="main-content">
-            <!-- 搜索结果 -->
-            <div v-if="searchResults.length > 0" class="search-results-container">
-                <el-card class="search-results-card" shadow="hover">
-                    <template #header>
-                        <div class="card-header">
-                            <h2 class="results-title">搜索结果</h2>
-                            <el-button text @click="searchResults = []">清除</el-button>
-                        </div>
-                    </template>
 
-                    <div class="search-results-list">
-                        <div v-for="result in searchResults" :key="result.id" class="search-result-item"
-                            @click="viewDiseaseDetail(result)">
-                            <div class="result-title">
-                                <span>{{ result.name }}</span>
-                                <el-tag size="small" effect="plain" type="info">{{ result.category }}</el-tag>
-                            </div>
-                            <div class="result-content">
-                                {{ result.description }}
-                            </div>
-                            <div class="result-action">
-                                <el-button text type="primary">
-                                    查看详情
-                                    <el-icon>
-                                        <ArrowRight />
-                                    </el-icon>
-                                </el-button>
-                            </div>
-                        </div>
-                    </div>
-                </el-card>
-            </div>
 
-            <!-- 智能问诊和病情分析入口 -->
-            <!-- <MedicalChat /> -->
+            <!-- 病情分析入口 -->
             <el-row :gutter="20" class="diagnosis-section">
-                <!-- 智能问诊入口 -->
-                <el-col :xs="24" :sm="24" :md="12">
-                    <el-card class="ai-card" shadow="hover">
-                        <div class="ai-content">
-                            <div class="ai-info">
-                                <h2 class="ai-title">智能问诊</h2>
-                                <p class="ai-description">
-                                    描述您的症状，智能助手将为您提供初步诊断建议和就医指导。
-                                    <span class="ai-note">（仅供参考，不能替代医生诊断）</span>
-                                </p>
-                                <el-button type="primary" @click="aiDialogVisible = true" class="ai-button">
-                                    <el-icon>
-                                        <ChatDotRound />
-                                    </el-icon>
-                                    开始问诊
-                                </el-button>
-                            </div>
-                            <div class="ai-image">
-                                <img src="~assets/images/logo.png" alt="AI问诊" />
-                            </div>
-                        </div>
-                    </el-card>
-                </el-col>
-
-                <!-- 病情分析入口 -->
-                <el-col :xs="24" :sm="24" :md="12">
+                <el-col :xs="24" :sm="24" :md="24">
                     <el-card class="analysis-card" shadow="hover">
                         <div class="analysis-content">
                             <div class="analysis-info">
@@ -579,44 +517,7 @@ onMounted(() => {
             </div>
         </div>
 
-        <!-- AI问诊对话框 -->
-        <el-dialog v-model="aiDialogVisible" title="AI智能问诊" width="600px" class="ai-dialog">
-            <div class="ai-chat-container">
-                <div class="ai-chat-messages">
-                    <div v-for="(message, index) in aiMessages" :key="index" class="chat-message"
-                        :class="{ 'user-message': message.role === 'user', 'ai-message': message.role === 'assistant' }">
-                        <div class="message-avatar">
-                            <el-avatar :icon="message.role === 'user' ? 'User' : 'ChatDotRound'" :size="36" />
-                        </div>
-                        <div class="message-content">
-                            {{ message.content }}
-                        </div>
-                    </div>
 
-                    <div v-if="aiLoading" class="ai-typing">
-                        <div class="typing-indicator">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="ai-chat-input">
-                    <el-input v-model="userInput" placeholder="请描述您的症状..." :disabled="aiLoading"
-                        @keyup.enter="sendAiMessage">
-                        <template #append>
-                            <el-button @click="sendAiMessage" :disabled="aiLoading || !userInput.trim()">
-                                发送
-                            </el-button>
-                        </template>
-                    </el-input>
-                    <div class="ai-disclaimer">
-                        注意：AI问诊仅供参考，不能替代专业医生的诊断和治疗建议。如有紧急情况，请立即就医。
-                    </div>
-                </div>
-            </div>
-        </el-dialog>
 
         <!-- 病情分析对话框 -->
         <el-dialog v-model="analysisDialogVisible" title="病情分析" width="700px" class="analysis-dialog">
@@ -681,28 +582,42 @@ onMounted(() => {
                         <strong>症状描述：</strong> {{ analysisResult.symptoms }}
                     </div>
 
-                    <div class="risk-level" :class="`risk-${analysisResult.riskLevel}`">
+                    <!-- <div class="risk-level" :class="`risk-${analysisResult.riskLevel}`">
                         <el-icon v-if="analysisResult.riskLevel === '高'">
                             <WarningFilled />
                         </el-icon>
                         风险等级：{{ analysisResult.riskLevel }}
-                    </div>
+                    </div> -->
 
                     <div class="possible-diseases">
                         <h4>可能的疾病：</h4>
                         <div class="disease-list">
                             <div v-for="(disease, index) in analysisResult.possibleDiseases" :key="index"
-                                class="disease-item">
+                                class="disease-item" @click="navigateTo(`/disease/${disease.discode}`)">
                                 <div class="disease-header">
                                     <span class="disease-name">{{ disease.name }}</span>
+                                    <el-tag size="small" effect="plain" type="info" class="disease-department">
+                                        {{ disease.department || '未知科室' }}
+                                    </el-tag>
+                                    <el-tag size="small" effect="plain" type="success" class="disease-category">
+                                        {{ disease.category || '未分类' }}
+                                    </el-tag>
                                     <el-progress v-if="disease.probability > 0" :percentage="disease.probability * 100"
                                         :color="disease.probability > 0.7 ? '#F56C6C' : disease.probability > 0.4 ? '#E6A23C' : '#67C23A'"
                                         :show-text="false" :stroke-width="8" class="disease-probability" />
                                     <span v-if="disease.probability > 0" class="probability-text">{{
-                                        (disease.probability *
-                                            100).toFixed(0) }}%</span>
+                                        (disease.probability * 100).toFixed(0) }}%</span>
                                 </div>
-                                <p class="disease-description">{{ disease.description }}</p>
+
+                                <!-- 展示核心内容 -->
+                                <div class="disease-sections" v-if="disease.sections && disease.sections.length > 0">
+                                    <div v-for="(section, sectionIndex) in filterCoreSections(disease.sections)"
+                                        :key="sectionIndex" class="disease-section">
+                                        <h5 class="section-title">{{ section.title }}</h5>
+                                        <p class="section-content">{{ formatSectionContent(section.text) }}</p>
+                                    </div>
+                                </div>
+                                <p class="disease-description" v-else>{{ disease.description || '暂无详细信息' }}</p>
                             </div>
                         </div>
                     </div>
@@ -808,6 +723,80 @@ onMounted(() => {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.disease-item {
+    border-bottom: 1px solid #ebeef5;
+    padding: 15px 0;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.disease-item:last-child {
+    border-bottom: none;
+}
+
+.disease-item:hover {
+    background-color: #f5f7fa;
+}
+
+.disease-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.disease-name {
+    font-weight: 600;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+.disease-department,
+.disease-category {
+    margin-right: 8px;
+    font-size: 12px;
+}
+
+.disease-probability {
+    width: 100px;
+    margin: 0 10px;
+}
+
+.probability-text {
+    font-size: 14px;
+    color: #606266;
+}
+
+.disease-description {
+    color: #606266;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.disease-sections {
+    margin-top: 10px;
+}
+
+.disease-section {
+    margin-bottom: 12px;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #303133;
+    margin: 0 0 5px 0;
+}
+
+.section-content {
+    font-size: 13px;
+    color: #606266;
+    line-height: 1.5;
+    margin: 0;
+    text-align: justify;
 }
 
 .disease-card {

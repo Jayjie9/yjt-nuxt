@@ -17,7 +17,8 @@ export default defineNuxtRouteMiddleware((to, from) => {
     '/index',
     '/hospital',
     '/hospital/(.*)',
-    // 测试使用的路由
+    '/disease',
+    '/disease/(.*)',
     '/patient',
     '/user',
   ]

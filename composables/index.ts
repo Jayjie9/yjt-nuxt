@@ -81,11 +81,6 @@ export const qqLogin = () => {
   return useFetchGet('/api/user/oauth/qq/login')
 }
 
-// 测试接口
-export const test = () => {
-  return useFetchGet('/api/user/test')
-}
-
 // 发送手机验证码
 export const sendCaptcha = (phone: string) => {
   const encodedPhone = encodeURIComponent(phone)
@@ -317,6 +312,7 @@ export const useOrderApi = () => {
   }
 }
 
+// 支付接口
 export const useAlipayApi = () => {
   const toPay = (orderId: string) => {
     return fetchGet(
@@ -400,6 +396,11 @@ export const useUserApi = () => {
   // 修改用户信息接口
   const updateUserInfo = (userInfo: any) => {
     return fetchPut(`/api/user/auth/modify`, userInfo)
+  }
+
+  // 换绑手机号接口
+  const updatePhone = (phone: string, code: string) => {
+    return fetchPost(`/api/user/auth/updatePhone`, { phone, code })
   }
 
   // 获取用户收藏

@@ -355,18 +355,16 @@ onMounted(() => {
 
                 <!-- 医院位置区域 -->
                 <section class="hospital-location-section">
-                  <h2 class="section-title">医院位置</h2>
+                  <!-- <h2 class="section-title">医院位置</h2> -->
                   <el-card class="location-card" shadow="hover" v-motion :initial="{ opacity: 0, y: 20 }"
                     :enter="{ opacity: 1, y: 0, transition: { delay: 600 } }">
-                    <template #header>
-                      <div class="card-header-custom">
-                        <el-icon>
-                          <Location />
-                        </el-icon>
-                        <span>地址信息</span>
-                      </div>
-                    </template>
-                    <div class="location-content">
+                    <div class="card-header-custom">
+                      <el-icon>
+                        <Location />
+                      </el-icon>
+                      <span>地址信息: {{ hospital.param?.fullAddress || '暂无地址信息' }}</span>
+                    </div>
+                    <!-- <div class="location-content">
                       <el-alert type="info" :closable="false" show-icon>
                         <template #title>
                           <div class="address-display">
@@ -374,7 +372,7 @@ onMounted(() => {
                           </div>
                         </template>
                       </el-alert>
-                    </div>
+                    </div> -->
                   </el-card>
                 </section>
 

@@ -271,7 +271,7 @@ const getCurDate = () => {
  * @param scheduleId 排班ID
  * @param availableNumber 可用号源数
  */
-const booking = (scheduleId: string, availableNumber: number) => {
+const booking = (scheduleId: string, availableNumber: number, hosScheduleId: string) => {
   // 检查是否还有号
   if (availableNumber === 0) {
     ElMessage.warning('已约满')
@@ -285,7 +285,7 @@ const booking = (scheduleId: string, availableNumber: number) => {
   }
 
   // 跳转到预约页面
-  router.push(`/hospital/booking?scheduleId=${scheduleId}`)
+  router.push(`/hospital/booking?scheduleId=${scheduleId}&hosScheduleId=${hosScheduleId}`)
 }
 
 /**
@@ -441,7 +441,7 @@ onUnmounted(() => {
               <div class="booking-info">
                 <div class="price">￥{{ item.amount }}</div>
                 <el-button type="primary" :disabled="item.availableNumber === 0"
-                  @click="booking(item.id, item.availableNumber)">
+                  @click="booking(item.id, item.availableNumber, item.hosScheduleId)">
                   剩余 {{ item.availableNumber }} 号
                 </el-button>
               </div>
@@ -492,7 +492,7 @@ onUnmounted(() => {
               <div class="booking-info">
                 <div class="price">￥{{ item.amount }}</div>
                 <el-button type="primary" :disabled="item.availableNumber === 0"
-                  @click="booking(item.id, item.availableNumber)">
+                  @click="booking(item.id, item.availableNumber, item.hosScheduleId)">
                   剩余 {{ item.availableNumber }} 号
                 </el-button>
               </div>

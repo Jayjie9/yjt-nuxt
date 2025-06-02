@@ -39,7 +39,7 @@ export default {
   runtimeConfig: {
     public: {
       API_BASE_DEV: 'http://localhost:8000',
-      API_BASE_PROD: 'http://47.122.125.175:8000',
+      API_BASE_PROD: 'https://yjt.asia',
     },
   },
   css: [

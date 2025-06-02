@@ -268,7 +268,7 @@ const submitAnalysis = async () => {
 
     const { data } = await disease.symptomAnalysis(symptomInput.value)
 
-    // 模拟分析结果
+    // 分析结果
     const symptoms = symptomInput.value
     let result = {
         id: Date.now(),
@@ -278,10 +278,7 @@ const submitAnalysis = async () => {
         recommendations: [],
         riskLevel: ''
     }
-    const diseaseList = data.data
-    console.log('diseaseList', diseaseList);
-
-
+    // const diseaseList = data.data
     if (Array.isArray(data.data)) {
         result.possibleDiseases = data.data.map(item => {
             const disease = item.disease || {}
@@ -582,13 +579,6 @@ onMounted(() => {
                         <strong>症状描述：</strong> {{ analysisResult.symptoms }}
                     </div>
 
-                    <!-- <div class="risk-level" :class="`risk-${analysisResult.riskLevel}`">
-                        <el-icon v-if="analysisResult.riskLevel === '高'">
-                            <WarningFilled />
-                        </el-icon>
-                        风险等级：{{ analysisResult.riskLevel }}
-                    </div> -->
-
                     <div class="possible-diseases">
                         <h4>可能的疾病：</h4>
                         <div class="disease-list">
@@ -741,6 +731,7 @@ onMounted(() => {
 }
 
 .disease-header {
+    padding: 10px 10px 0 10px;
     display: flex;
     align-items: center;
     margin-bottom: 12px;
@@ -770,6 +761,7 @@ onMounted(() => {
 }
 
 .disease-description {
+    padding: 10px;
     color: #606266;
     font-size: 14px;
     line-height: 1.5;
@@ -793,6 +785,7 @@ onMounted(() => {
 
 .section-content {
     font-size: 13px;
+    padding: 10px;
     color: #606266;
     line-height: 1.5;
     margin: 0;

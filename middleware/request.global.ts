@@ -14,6 +14,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
     '/',
     '/login',
     '/about',
+    '/help',
     '/index',
     '/hospital',
     '/hospital/(.*)',

@@ -14,6 +14,7 @@ const router = useRouter()
 // 页面数据
 const hoscode = ref('')
 const scheduleId = ref('')
+const hosScheduleId = ref('')
 const schedule = ref<Schedule>({} as Schedule)
 const patientList = ref<Patient[]>([])
 const patient = ref<Patient>({} as Patient)
@@ -75,7 +76,7 @@ const submitOrder = async () => {
 
   submitBnt.value = '正在提交...'
   try {
-    const { data: response } = await api.order.submitOrder(scheduleId.value, patient.value.id)
+    const { data: response } = await api.order.submitOrder(scheduleId.value, patient.value.id, hosScheduleId.value)
     if (response.value.code === 200) {
       ElMessage.success('预约成功')
       router.push(`/order/show?orderId=${response.value.data}`)
@@ -108,6 +109,7 @@ const init = async () => {
 onMounted(() => {
   hoscode.value = route.query.hoscode as string
   scheduleId.value = route.query.scheduleId as string
+  hosScheduleId.value = route.query.hosScheduleId as string
   init()
 })
 </script>

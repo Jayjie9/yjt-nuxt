@@ -19,12 +19,13 @@ const searchObj = reactive({}) // 查询表单对象
 const patientList = ref([])
 const statusList = ref([])
 /* 辅助函数 - 根据订单状态返回对应的Element Plus标签类型 */
+/* 辅助函数 */
 function getStatusType(status) {
   switch (status) {
-    case -1: return 'danger';  // 取消
-    case 0: return 'warning';  // 待付款
-    case 1: return 'info';     // 待就诊
-    case 2: return 'success';  // 已就诊
+    case -1: return 'danger';  // 已取消
+    case 0: return 'warning';  // 预约成功，待付款
+    case 1: return 'success';  // 已支付
+    case 2: return 'primary';  // 已取号
     default: return 'info';
   }
 }

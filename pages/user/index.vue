@@ -1,6 +1,7 @@
 <script setup>
 import { ElMessage } from 'element-plus'
 import { useApi } from '~/composables'
+import { useAuth } from '~/composables/useAuth'
 import {
   User, Upload, Check, Calendar, Phone, Message, Setting, Lock, Document, Bell,
   House, ArrowDown, ArrowUp, Delete, Location, Star
@@ -12,6 +13,50 @@ const api = useApi()
 const dictApi = api.dictionary
 const userInfoApi = api.user
 
+// 获取用户认证状态
+const { isLoggedIn } = useAuth()
+
+// 消息相关状态
+const messages = ref([])
+const loading = ref(false)
+
+// 获取消息列表
+const getMessages = async () => {
+  if (!isLoggedIn.value) return
+
+  loading.value = true
+  try {
+    const { data: response } = await userInfoApi.getMessageList()
+    if (response.code === 200) {
+      messages.value = response.data || []
+      // 更新未读消息数量
+      mockUserStats.notifications = messages.value.filter(msg => msg.readFlag === 0).length
+    }
+  } catch (error) {
+    console.error('获取消息列表失败:', error)
+    ElMessage.error('获取消息列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 标记消息为已读
+const markAsRead = async (message) => {
+  if (message.readFlag === 0) {
+    message.readFlag = 1
+    try {
+      const { data: response } = await userInfoApi.updateMessageStatus(message.id)
+      if (response.code === 200) {
+        // 更新未读消息数量
+        mockUserStats.notifications = messages.value.filter(msg => msg.readFlag === 0).length
+        ElMessage.success('已标记为已读')
+      }
+    } catch (error) {
+      console.error('更新消息状态失败:', error)
+      ElMessage.error('操作失败，请稍后重试')
+    }
+  }
+}
 
 const defaultForm = {
   name: '',
@@ -306,10 +351,19 @@ const init = async () => {
   await getUserInfo()
   await getUserCollect()
   await getDict()
+  await getMessages()
 }
 
 onMounted(() => {
   init()
+
+  // 处理URL参数，支持从消息通知跳转
+  if (import.meta.client) {
+    const route = useRoute()
+    if (route.query.tab === 'notifications') {
+      activeTab.value = 'notifications'
+    }
+  }
 })
 </script>
 
@@ -779,13 +833,31 @@ onMounted(() => {
           <template #header>
             <div class="section-title">
               <el-icon>
-                <DocumentChecked />
+                <Bell />
               </el-icon>
               <h2 class="notification-title">消息通知</h2>
             </div>
           </template>
 
-          <div class="notification-empty" v-if="mockUserStats.notifications === 0">
+          <!-- 未登录状态 -->
+          <div v-if="!isLoggedIn" class="service-unauthorized">
+            <div class="unauthorized-icon">
+              <el-icon>
+                <Lock />
+              </el-icon>
+            </div>
+            <h3>您尚未登录</h3>
+            <p>登录后才能查看消息通知</p>
+            <el-button type="primary" @click="$router.push('/login')">去登录</el-button>
+          </div>
+
+          <!-- 加载中状态 -->
+          <div v-else-if="loading" class="loading-state">
+            <el-skeleton :rows="3" animated />
+          </div>
+
+          <!-- 空消息状态 -->
+          <div v-else-if="messages.length === 0" class="notification-empty">
             <div class="empty-icon">
               <el-icon>
                 <Bell />
@@ -793,21 +865,24 @@ onMounted(() => {
             </div>
             <p>暂无消息通知</p>
           </div>
-          <div class="notification-list" v-else>
-            <div class="notification-item" v-for="i in mockUserStats.notifications" :key="i">
+
+          <!-- 消息列表 -->
+          <div v-else class="notification-list">
+            <div class="notification-item" v-for="message in messages" :key="message.id"
+              :class="{ 'unread': message.readFlag === 0 }">
               <div class="notification-content">
                 <div class="notification-title">
-                  <span class="notification-badge"></span>
-                  <span>{{ ['预约成功通知', '就诊提醒', '报告结果通知'][i - 1] }}</span>
+                  <span class="notification-badge" v-if="message.readFlag === 0"></span>
+                  <span>{{ message.title }}</span>
                 </div>
-                <div class="notification-time">{{ new Date().toLocaleDateString() }}</div>
+                <div class="notification-time">{{ message.create_time }}</div>
                 <div class="notification-desc">
-                  {{ ['您的预约已成功，请按时就诊', '您有一个预约即将到期，请及时就诊', '您的检查报告已出，请查看'][i - 1] }}
+                  {{ message.content }}
                 </div>
               </div>
               <div class="notification-actions">
-                <el-button type="text" size="small">查看详情</el-button>
-                <el-button type="text" size="small">标为已读</el-button>
+                <el-button type="text" size="small" @click="markAsRead(message)"
+                  v-if="message.readFlag === 0">标为已读</el-button>
               </div>
             </div>
           </div>
@@ -1638,6 +1713,17 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+/* 加载状态 */
+.loading-state {
+  padding: 20px;
+}
+
+/* 未读消息样式 */
+.notification-item.unread {
+  background-color: #f0f7ff;
+  border-left: 3px solid #409eff;
 }
 
 /* 响应式设计 */

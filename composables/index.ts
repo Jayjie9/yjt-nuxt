@@ -248,9 +248,13 @@ export const useDictionaryApi = () => {
 // 订单接口
 export const useOrderApi = () => {
   // 生成订单
-  const submitOrder = (scheduleId: string, patientId: number) => {
+  const submitOrder = (
+    scheduleId: string,
+    patientId: number,
+    hosScheduleId: string
+  ) => {
     return useFetchPost(
-      `/api/order/orderInfo/auth/submitOrder/${scheduleId}/${patientId}`,
+      `/api/order/orderInfo/auth/submitOrder/${scheduleId}/${patientId}/${hosScheduleId}`,
       {}
     )
   }
@@ -326,8 +330,13 @@ export const useAlipayApi = () => {
     )
   }
 
+  const toPayTest = (orderId: string) => {
+    return fetchGet(`/api/order/pay-test`, { id: orderId })
+  }
+
   return {
     toPay,
+    toPayTest,
   }
 }
 
@@ -423,6 +432,21 @@ export const useUserApi = () => {
     return fetchDelete(`/api/user/collect/auth/del`, { id })
   }
 
+  // 获取消息列表
+  const getMessageList = () => {
+    return fetchGet(`/api/user/message/list`)
+  }
+
+  // 获取未读消息数量
+  const getMessageCount = () => {
+    return fetchGet(`/api/user/message/count`)
+  }
+
+  // 更新消息状态
+  const updateMessageStatus = (id: number | string) => {
+    return fetchPut(`/api/user/message/read/${id}`)
+  }
+
   return {
     saveUserAuth,
     getUserInfo,
@@ -432,6 +456,9 @@ export const useUserApi = () => {
     isCollectedDollar,
     addCollectDollar,
     deleteCollectDollar,
+    getMessageList,
+    getMessageCount,
+    updateMessageStatus,
   }
 }
 

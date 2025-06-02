@@ -53,7 +53,7 @@ const remove = async (id) => {
             cancelButtonText: '取消',
             type: 'warning'
         })
-        await api.patient.removeById(id)
+        await api.patient.removePatient(id)
         ElMessage.success('删除成功')
         await findPatientList()
     } catch (error) {
@@ -125,7 +125,7 @@ onMounted(() => {
                                 <div class="info-item">
                                     <span class="info-label">性别/生日</span>
                                     <span class="info-value">{{ item.sex === 1 ? '男' : '女' }} · {{ item.birthdate
-                                        }}</span>
+                                    }}</span>
                                 </div>
                                 <div class="info-item">
                                     <span class="info-label">手机号码</span>

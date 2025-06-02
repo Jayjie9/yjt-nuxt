@@ -17,10 +17,10 @@ const loading = ref(true)
 /* 辅助函数 */
 function getStatusType(status) {
   switch (status) {
-    case -1: return 'danger';  // 取消
-    case 0: return 'warning';  // 待付款
-    case 1: return 'info';     // 待就诊
-    case 2: return 'success';  // 已就诊
+    case -1: return 'danger';  // 已取消
+    case 0: return 'warning';  // 预约成功，待付款
+    case 1: return 'success';  // 已支付
+    case 2: return 'primary';  // 已取号
     default: return 'info';
   }
 }
@@ -45,6 +45,22 @@ const goBack = () => {
 const pay = async () => {
   handlePay(orderId.value)
 }
+/* 模拟 Alipay 支付 */
+const payTest = async () => {
+  alipay.toPayTest(orderId.value)
+    .then(res => {
+      console.log('支付结果:', res.data);
+
+      if (res.data.code == 200) {
+        ElMessage.success('支付成功')
+        if (import.meta.client) {
+          window.location.reload()
+        }
+      } else {
+        ElMessage.error('支付失败')
+      }
+    })
+}
 function handlePay(orderId) {
   alipay.toPay(orderId)
     .then(res => {
@@ -68,7 +84,6 @@ function handlePay(orderId) {
       }
     })
     .catch(error => {
-      // console.error('支付请求失败:', error)
       ElMessage.error('支付请求失败，请重试', error)
     })
 }
@@ -223,16 +238,16 @@ onMounted(() => {
                   </el-icon>1、请确认就诊人信息是否准确，若填写错误将无法取号就诊，损失由本人承担；</p>
                 <p class="important"><el-icon class="notice-icon">
                     <WarningFilled />
-                  </el-icon>2、【取号】就诊当天需在{{ orderInfo.fetchTime }}在医院取号，未取号视为爽约，该号不退不换；</p>
+                  </el-icon>2、【取号】就诊当天需在{{ orderInfo.fetchTime }}取号，未取号视为爽约，该号不退不换；</p>
                 <p><el-icon class="notice-icon">
                     <WarningFilled />
                   </el-icon>3、【退号】在{{ orderInfo.quitTime }}前可在线退号，逾期将不可办理退号退费；</p>
                 <p><el-icon class="notice-icon">
                     <WarningFilled />
-                  </el-icon>4、北京114预约挂号支持自费患者使用身份证预约，同时支持北京市医保患者使用北京社保卡在平台预约挂号。请于就诊当日，携带预约挂号所使用的有效身份证件到院取号；</p>
+                  </el-icon>4、预约挂号支持自费患者使用身份证预约，同时支持医保患者使用社保卡在平台预约挂号。请于就诊当日，携带预约挂号所使用的有效身份证件到院取号；</p>
                 <p><el-icon class="notice-icon">
                     <WarningFilled />
-                  </el-icon>5、请注意北京市医保患者在住院期间不能使用社保卡在门诊取号。</p>
+                  </el-icon>5、请珍惜您挂到的号码，多次取消可能会被拉入黑名单。</p>
               </div>
             </div>
           </div>
@@ -243,6 +258,11 @@ onMounted(() => {
             <el-popconfirm title="点击确定跳转到支付页面" @confirm="pay" placement="top-start">
               <template #reference>
                 <el-button v-if="orderInfo.orderStatus == 0" type="primary" class="pay-btn">立即支付</el-button>
+              </template>
+            </el-popconfirm>
+            <el-popconfirm title="点击确定直接支付成功" @confirm="payTest" placement="top-start">
+              <template #reference>
+                <el-button v-if="orderInfo.orderStatus == 0" type="primary" class="pay-btn">模拟支付</el-button>
               </template>
             </el-popconfirm>
           </div>

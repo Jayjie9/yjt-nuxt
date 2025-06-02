@@ -34,6 +34,7 @@ export interface BookingScheduleResponse {
 
 export interface DoctorSchedule {
   id: string
+  hosScheduleId: string
   title: string
   docname: string
   skill: string

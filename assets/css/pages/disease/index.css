@@ -251,16 +251,29 @@
 }
 
 /* 病情分析对话框样式 */
+/* 病情分析对话框样式 */
 .analysis-dialog :deep(.el-dialog__header) {
-  padding: 15px 20px;
+  padding: 16px 20px;
   margin-right: 0;
   border-bottom: 1px solid #edf2f7;
+  background-color: #f8f9fa;
+}
+
+.analysis-dialog :deep(.el-dialog__title) {
+  font-weight: 600;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.analysis-dialog :deep(.el-dialog__body) {
+  padding: 20px;
 }
 
 .analysis-container {
-  padding: 20px;
+  padding: 0 5px;
   max-height: 70vh;
   overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .section-subtitle {
@@ -321,141 +334,87 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
   border-bottom: 1px solid #edf2f7;
 }
 
 .result-title {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
 }
 
 .result-title h3 {
   margin: 0;
   color: #2c3e50;
-  font-size: 1.2rem;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .result-date {
-  color: #95a5a6;
-  font-size: 0.9rem;
-}
-
-.symptoms-summary {
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  color: #5a6a7e;
-}
-
-.risk-level {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-weight: 500;
-  margin-bottom: 20px;
-}
-
-.risk-高 {
-  background-color: #fef0f0;
-  color: #f56c6c;
-}
-
-.risk-中等 {
-  background-color: #fdf6ec;
-  color: #e6a23c;
-}
-
-.risk-低 {
-  background-color: #f0f9eb;
-  color: #67c23a;
-}
-
-.risk-未知 {
-  background-color: #f4f4f5;
   color: #909399;
-}
-
-.possible-diseases,
-.recommendations {
-  margin-bottom: 20px;
+  font-size: 13px;
 }
 
 .possible-diseases h4,
 .recommendations h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 12px;
   color: #2c3e50;
-  font-size: 1.1rem;
+  position: relative;
+  padding-left: 0;
+}
+
+.possible-diseases h4::before,
+.recommendations h4::before {
+  content: none;
 }
 
 .disease-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 0;
 }
 
 .disease-item {
-  padding: 12px;
-  border-radius: 6px;
+  padding: 15px;
   background-color: #f8f9fa;
-  border-left: 4px solid #409eff;
-}
-
-.disease-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.disease-name {
-  font-weight: 500;
-  color: #2c3e50;
-  margin-right: 10px;
-  min-width: 80px;
-}
-
-.disease-probability {
-  flex: 1;
-  margin-right: 10px;
-}
-
-.probability-text {
-  font-size: 0.9rem;
-  color: #5a6a7e;
-  min-width: 40px;
-  text-align: right;
-}
-
-.disease-description {
+  border-left: none;
+  border-bottom: 1px solid #ebeef5;
   margin: 0;
-  color: #5a6a7e;
-  font-size: 0.95rem;
-  line-height: 1.5;
+}
+
+.disease-item:last-child {
+  border-bottom: none;
 }
 
 .recommendation-list {
-  margin: 0;
+  margin: 10px 0;
   padding-left: 20px;
 }
 
 .recommendation-list li {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   color: #5a6a7e;
+  line-height: 1.5;
 }
 
 .analysis-disclaimer {
   margin-top: 20px;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-  color: #95a5a6;
-  font-size: 0.9rem;
-  text-align: center;
+  padding: 12px 15px;
+  background-color: #fff6f6;
+  border-radius: 8px;
+  color: #f56c6c;
+  font-size: 13px;
+  line-height: 1.5;
+  border-left: none;
+  text-align: left;
 }
 
 /* 历史记录样式 */
@@ -755,4 +714,25 @@
   .chat-message {
     max-width: 100%;
   }
+}
+
+.symptoms-summary {
+  margin-bottom: 15px;
+  padding: 12px 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  color: #5a6a7e;
+  border-left: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.6;
+  max-height: none;
+}
+
+.possible-diseases,
+.recommendations {
+  margin-bottom: 20px;
 }

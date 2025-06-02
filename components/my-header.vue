@@ -9,10 +9,12 @@ import {
   House,
   Bell,
   Location,
-  SwitchButton
+  SwitchButton,
+  View,
+  Check
 } from '@element-plus/icons-vue'
 import { useUserStore } from '~/stores/user'
-
+import { useUserApi } from '~/composables/index'
 
 /** 用户状态管理 */
 const userStore = useUserStore()
@@ -22,6 +24,86 @@ const isLoggedIn = computed(() => userStore.LoggedIn)
 const displayName = computed(() => userStore.getUserName)
 /** 用户头像 */
 const avatarUrl = computed(() => userStore.avatarUrl)
+
+interface Message {
+  id: number
+  user_id: number
+  title: string
+  content: string
+  readFlag: number
+  create_time: string
+  type: string
+}
+// 消息相关状态
+const showMessages = ref(false)
+const messages = ref<Message[]>([])
+
+// 获取消息列表数据
+const getMessages = async () => {
+  // 只有登录用户才获取消息列表
+  if (!isLoggedIn.value) return
+
+  try {
+    const { data: response } = await useUserApi().getMessageList()
+    messages.value = response.data
+  } catch (error) {
+    console.error('获取消息列表失败:', error)
+  }
+}
+
+// 计算未读消息数量
+const unreadCount = computed(() => {
+  return messages.value.filter(msg => msg.readFlag === 0).length
+})
+
+// 显示的消息数量
+const displayMessageCount = 3
+
+// 是否有更多消息
+const hasMoreMessages = computed(() => {
+  return messages.value.length > displayMessageCount
+})
+
+// 切换消息列表显示状态
+const toggleMessages = () => {
+  // 未登录用户点击消息按钮时提示登录
+  if (!isLoggedIn.value) {
+    ElMessage.info('请先登录后查看消息')
+    return
+  }
+  showMessages.value = !showMessages.value
+}
+
+// 标记消息为已读
+const markAsRead = (message: Message) => {
+  if (message.readFlag === 0) {
+    useUserApi().updateMessageStatus(message.id)
+    message.readFlag = 1
+  }
+}
+
+// 查看所有消息
+const viewAllMessages = () => {
+  // 关闭消息弹窗
+  showMessages.value = false
+  // 跳转到用户中心的消息通知标签页
+  navigateTo('/user?tab=notifications')
+}
+
+// 点击其他区域关闭消息列表的处理函数
+const setupClickOutsideListener = () => {
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    const messageContainer = document.querySelector('.message-container')
+    const notificationBtn = document.querySelector('.notification')
+
+    if (messageContainer && notificationBtn) {
+      if (!messageContainer.contains(target) && !notificationBtn.contains(target)) {
+        showMessages.value = false
+      }
+    }
+  })
+}
 
 /**
  * 根据用户名生成头像背景色
@@ -111,9 +193,17 @@ const getAvatarUrl = async () => {
   console.log('avatarUrl:', avatarUrl)
 }
 
+// 组件挂载时的初始化操作
 onMounted(() => {
+  // 恢复用户信息和头像
   userStore.restoreUserInfo()
   getAvatarUrl()
+
+  // 获取消息列表数据
+  getMessages()
+
+  // 设置点击其他区域关闭消息列表的事件监听
+  setupClickOutsideListener()
 })
 </script>
 
@@ -151,12 +241,53 @@ onMounted(() => {
       <!-- 右侧用户菜单 -->
       <div class="right-wrapper">
         <div class="action-items">
-          <div class="v-link notification">
+          <div class="v-link notification" @click.stop="toggleMessages">
             <el-icon>
               <Bell />
             </el-icon>
             <span>消息</span>
-            <span class="badge">2</span>
+            <span v-if="unreadCount > 0" class="badge">{{ unreadCount }}</span>
+
+            <!-- 消息列表弹出框 -->
+            <div v-if="showMessages" class="message-container" @click.stop>
+              <div class="message-header">
+                <h3>消息通知</h3>
+                <span v-if="isLoggedIn">{{ unreadCount }}条未读</span>
+              </div>
+
+              <div v-if="isLoggedIn && messages.length > 0" class="message-list">
+                <div v-for="message in messages.slice(0, displayMessageCount)" :key="message.id" class="message-item"
+                  :class="{ 'unread': message.readFlag === 0 }" @click="markAsRead(message)">
+                  <div class="message-icon">
+                    <el-icon v-if="message.readFlag === 0">
+                      <Bell />
+                    </el-icon>
+                    <el-icon v-else>
+                      <Check />
+                    </el-icon>
+                  </div>
+                  <div class="message-content">
+                    <div class="message-title">{{ message.title }}</div>
+                    <div class="message-text">{{ message.content }}</div>
+                    <div class="message-time">{{ message.create_time }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else-if="isLoggedIn && messages.length === 0" class="empty-message">
+                <el-icon>
+                  <Bell />
+                </el-icon>
+                <span>暂无消息</span>
+              </div>
+
+              <div v-if="isLoggedIn && hasMoreMessages" class="view-more" @click="viewAllMessages">
+                <el-icon>
+                  <View />
+                </el-icon>
+                <span>查看全部</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -352,6 +483,132 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 消息列表容器 */
+.message-container {
+  position: absolute;
+  top: 45px;
+  right: -10px;
+  width: 320px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--el-border-color-light);
+}
+
+.message-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.message-header span {
+  font-size: 12px;
+  color: var(--el-color-danger);
+}
+
+.message-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.message-item {
+  display: flex;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.message-item:hover {
+  background: var(--el-color-primary-light-9);
+}
+
+.message-item.unread {
+  background: rgba(24, 144, 255, 0.05);
+}
+
+.message-icon {
+  margin-right: 12px;
+  color: var(--el-color-primary);
+}
+
+.message-item.unread .message-icon {
+  color: var(--el-color-danger);
+}
+
+.message-content {
+  flex: 1;
+}
+
+.message-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--el-text-color-primary);
+}
+
+.message-item.unread .message-title {
+  font-weight: 600;
+}
+
+.message-text {
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+  margin-bottom: 4px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-time {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+}
+
+.view-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px;
+  color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.view-more:hover {
+  background: var(--el-color-primary-light-8);
+}
+
+/* 空消息状态样式 */
+.empty-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 0;
+  color: var(--el-text-color-secondary);
+  gap: 10px;
+}
+
+.empty-message .el-icon {
+  font-size: 24px;
+  opacity: 0.7;
 }
 
 /* 登录注册区域样式 */

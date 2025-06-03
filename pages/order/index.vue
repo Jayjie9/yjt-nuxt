@@ -11,6 +11,7 @@ const orderInfoApi = api.order
 const patientApi = api.patient
 /* 定义响应式数据 */
 const orderId = ref(route.query.orderId)
+const loading = ref(true) // 加载中状态
 const list = ref([])  // banner列表
 const total = ref(0)  // 数据库中的总记录数
 const page = ref(1)   // 默认页码
@@ -55,6 +56,7 @@ const fetchData = async (currentPage = 1) => {
   page.value = currentPage
   const { data: response } = await orderInfoApi.getOrderPageListDollar(page.value, limit.value, searchObj)
   list.value = response.data.records
+  loading.value = false
   total.value = response.data.total
 }
 
@@ -71,7 +73,11 @@ const show = (id) => {
     query: { orderId: id }
   })
 }
-
+const toSchedule = () => {
+  router.push({
+    path: '/'
+  })
+}
 onMounted(async () => {
   await fetchData()
   await findPatientList()
@@ -133,8 +139,8 @@ onMounted(async () => {
 
             <!-- 订单列表 -->
             <div class="order-table-wrapper">
-              <el-table :data="list" stripe border class="order-table" v-loading="!list.length"
-                element-loading-text="加载中...">
+              <el-table :data="list" stripe border class="order-table" v-loading="!list.length && loading"
+                element-loading-text="加载中..." empty-text="没有订单记录">
                 <el-table-column label="就诊时间" width="150" align="center">
                   <template #default="{ row }">
                     <div class="time-cell">
@@ -185,7 +191,7 @@ onMounted(async () => {
 
               <!-- 空数据提示 -->
               <el-empty v-if="list.length === 0" description="暂无订单数据" class="empty-data">
-                <el-button type="primary">去挂号</el-button>
+                <el-button type="primary" @click="toSchedule">去挂号</el-button>
               </el-empty>
             </div>
 

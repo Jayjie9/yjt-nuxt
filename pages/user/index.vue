@@ -62,9 +62,9 @@ const defaultForm = {
   name: '',
   certificatesType: '',
   certificatesNo: '',
-  certificatesUrl: ''
+  certificatesFileName: ''
 }
-
+const certificateUrl = ref('')
 const userAuth = reactive({ ...defaultForm })
 const certificatesTypeList = ref([])
 const userInfo = reactive({
@@ -226,8 +226,8 @@ const handleCertificateUpload = async (options) => {
     }
 
     // 获取上传返回的数据并设置证件URL
-    userAuth.certificatesUrl = response.data.url
-
+    userAuth.certificatesFileName = response.data.fileName
+    certificateUrl.value = response.data.url
     // 调用成功回调
     options.onSuccess(response)
     ElMessage.success('证件上传成功')
@@ -288,7 +288,8 @@ const handleAvatarUpload = async (options) => {
     avatarUrl.value = url
     // 保存文件名用于后续URL续签
     userInfo.avatar = fileName
-
+    localStorage.setItem('avatar-url', url)
+    localStorage.setItem('user-avatar', fileName)
     // 调用成功回调
     options.onSuccess(response)
     ElMessage.success('头像更新成功')
@@ -394,7 +395,7 @@ onMounted(() => {
             </div>
           </div>
           <div class="profile-info">
-            <h2 class="profile-name">{{ userInfo.nickName || '未认证用户' }}</h2>
+            <h2 class="profile-name">{{ userInfo.nickName || '默认用户名' }}</h2>
             <div class="profile-status">
               <el-tag :type="userInfo.authStatus > 1 ? 'success' : 'danger'" effect="light">
                 {{ authStatusString || '未认证' }}
@@ -412,7 +413,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="user-stats" v-if="userInfo.authStatus == 1">
+        <!-- <div class="user-stats" v-if="userInfo.authStatus == 1">
           <div class="stat-item">
             <div class="stat-value">{{ mockUserStats.appointments }}</div>
             <div class="stat-label">待就诊</div>
@@ -429,7 +430,7 @@ onMounted(() => {
             <div class="stat-value">{{ mockUserStats.notifications }}</div>
             <div class="stat-label">未读消息</div>
           </div>
-        </div>
+        </div> -->
       </el-card>
 
       <!-- 导航标签页 -->
@@ -483,18 +484,18 @@ onMounted(() => {
             <el-form :model="userAuth" label-width="120px" :rules="rules" ref="authForm">
               <el-form-item prop="name" label="姓名：">
                 <div class="input-with-icon">
-                  <el-icon class="field-icon">
+                  <!-- <el-icon class="field-icon">
                     <User />
-                  </el-icon>
+                  </el-icon> -->
                   <el-input v-model="userAuth.name" placeholder="请输入联系人姓名全称" clearable />
                 </div>
               </el-form-item>
 
               <el-form-item prop="certificatesType" label="证件类型：">
                 <div class="input-with-icon">
-                  <el-icon class="field-icon">
+                  <!-- <el-icon class="field-icon">
                     <Document />
-                  </el-icon>
+                  </el-icon> -->
                   <el-select v-model="userAuth.certificatesType" placeholder="请选择证件类型" class="auth-select">
                     <el-option v-for="item in certificatesTypeList" :key="item.value" :label="item.name"
                       :value="item.name" />
@@ -504,9 +505,9 @@ onMounted(() => {
 
               <el-form-item prop="certificatesNo" label="证件号码：">
                 <div class="input-with-icon">
-                  <el-icon class="field-icon">
+                  <!-- <el-icon class="field-icon">
                     <Document />
-                  </el-icon>
+                  </el-icon> -->
                   <el-input v-model="userAuth.certificatesNo" placeholder="请输入联系人证件号码" clearable />
                 </div>
               </el-form-item>
@@ -515,14 +516,14 @@ onMounted(() => {
                 <div class="upload-section">
                   <el-upload class="auth-upload" :http-request="handleCertificateUpload" :show-file-list="false"
                     :before-upload="beforeUpload">
-                    <div class="upload-area" v-if="!userAuth.certificatesUrl">
+                    <div class="upload-area" v-if="!userAuth.certificatesFileName">
                       <el-icon class="upload-icon">
                         <Upload />
                       </el-icon>
                       <span class="upload-text">上传证件照片</span>
                       <span class="upload-hint">支持JPG、PNG格式，不超过2MB</span>
                     </div>
-                    <img v-else :src="userAuth.certificatesUrl" class="upload-preview">
+                    <img v-else :src="certificateUrl" class="upload-preview">
                   </el-upload>
 
                   <div class="upload-example">
@@ -695,14 +696,6 @@ onMounted(() => {
                     <div class="favorite-intro" v-if="item.hospital.intro">
                       <div class="intro-text">{{ item.hospital.intro }}</div>
                     </div>
-                    <!-- <div class="favorite-route" v-if="item.hospital.route">
-                      <el-icon><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                          width="16" height="16">
-                          <path
-                            d="M12 2c-4.42 0-8 3.58-8 8 0 1.49.42 2.85 1.12 4.03L12 23l6.88-8.97c.7-1.18 1.12-2.54 1.12-4.03 0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" />
-                        </svg></el-icon>
-                      <span>{{ item.hospital.route }}</span>
-                    </div> -->
                     <div class="favorite-actions">
                       <el-button type="primary" size="small"
                         @click="$router.push(`/hospital/${item.hospital.hoscode}`)">
@@ -1155,6 +1148,7 @@ onMounted(() => {
 }
 
 .input-with-icon {
+  width: 50%;
   position: relative;
   display: flex;
   align-items: center;
@@ -1468,21 +1462,7 @@ onMounted(() => {
   border-radius: 4px;
 }
 
-.favorite-route {
-  display: flex;
-  align-items: flex-start;
-  gap: 5px;
-  font-size: 13px;
-  color: #606266;
-  margin-bottom: 15px;
-  line-height: 1.4;
-}
 
-.favorite-route .el-icon {
-  margin-top: 3px;
-  flex-shrink: 0;
-  color: #909399;
-}
 
 .favorite-actions {
   display: flex;

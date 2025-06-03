@@ -30,8 +30,8 @@ const formConfig = reactive({
 
 // 账号密码登录表单
 const passwordForm = reactive({
-  account: '',
-  password: '',
+  account: '17394430000',
+  password: 'zyj0820a',
 })
 
 // 手机验证码登录表单
@@ -91,7 +91,7 @@ const passwordStrength = reactive({
   score: 0,
   text: ''
 })
-
+const code = ref('')
 // 登录状态数据
 const loginState = reactive({
   error: '',
@@ -269,11 +269,10 @@ const getCaptcha = () => {
   api.sendCaptcha(smsForm.phoneNumber).then(({ data }) => {
     if (data.value && data.value.code === 200) {
       ElMessage.success(data.value.message || '验证码已发送');
-      // 如果是开发环境，可以显示验证码方便测试
-      if (data.value.data?.code && process.env.NODE_ENV === 'development') {
-        smsForm.captcha = data.value.data.code;
-        ElMessage.info(`开发环境验证码: ${data.value.data.code}`);
-      }
+      // 显示验证码
+      // ElMessage.info(`验证码: ${data.value.data}`);
+      // code.value = data.value.data;
+
     } else {
       ElMessage.error(data.value?.message || '发送失败，请重试');
       resetCaptchaTimer();

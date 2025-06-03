@@ -586,7 +586,7 @@ onMounted(() => {
                                 class="disease-item" @click="navigateTo(`/disease/${disease.discode}`)">
                                 <div class="disease-header">
                                     <span class="disease-name">{{ disease.name }}</span>
-                                    <el-tag size="small" effect="plain" type="info" class="disease-department">
+                                    <el-tag size="small" effect="plain" type="primary" class="disease-department">
                                         {{ disease.department || '未知科室' }}
                                     </el-tag>
                                     <el-tag size="small" effect="plain" type="success" class="disease-category">
@@ -744,7 +744,12 @@ onMounted(() => {
     margin-right: 10px;
 }
 
-.disease-department,
+.disease-department {
+    margin-right: 8px;
+    margin-bottom: 0;
+    font-size: 12px;
+}
+
 .disease-category {
     margin-right: 8px;
     font-size: 12px;

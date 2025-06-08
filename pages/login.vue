@@ -363,7 +363,7 @@ onUnmounted(() => {
       <div class="header-container">
         <div class="logo-container" @click="goToHome">
           <img src="~/assets/images/logo.png" alt="医捷通" class="logo-image">
-          <span class="logo-text">医捷通</span>
+          <span class="logo-text">医捷通 - ddd</span>
         </div>
         <nav class="nav-links">
           <a href="/" class="nav-link">挂号服务</a>
